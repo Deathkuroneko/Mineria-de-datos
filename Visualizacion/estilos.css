@@ -1,0 +1,121 @@
+/* estilos.css */
+:root {
+    --bg-main: #0f172a;
+    --bg-card: #1e293b;
+    --text-color: #f8fafc;
+    --accent-blue: #38bdf8;
+    --accent-red: #ef4444;
+    --border-color: #334155;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-color);
+}
+
+header {
+    background-color: var(--bg-card);
+    padding: 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+header h1 { margin: 0; font-size: 1.8rem; color: var(--accent-blue); }
+header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
+
+/* Grid de Monitoreo Principal */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+    padding: 2rem;
+}
+
+.card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.card h2 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.mapa-container {
+    grid-column: span 2; /* El mapa ocupa el doble de ancho */
+}
+
+#mapa {
+    height: 450px;
+    width: 100%;
+    border-radius: 8px;
+    background: #111;
+}
+
+.metric-bad {
+    font-size: 3.5rem;
+    font-weight: bold;
+    color: var(--accent-red);
+    text-align: center;
+    margin: 1rem 0;
+}
+
+/* ======================================================================
+   NUEVOS ESTILOS: SECCIÓN DE SUSTENTO TÉCNICO
+   ====================================================================== */
+
+.seccion-titulo {
+    margin: 2rem 2rem 1rem 2rem;
+    font-size: 1.5rem;
+    font-family: 'Segoe UI', sans-serif;
+    color: var(--text-color);
+}
+
+/* Grid secundario balanceado para los análisis de clusterización */
+.metodologia-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 1.5rem;
+    padding: 0 2rem 2rem 2rem;
+}
+
+/* Comportamiento Flexbox para centrar elementos internos verticales */
+.card-flex {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.contenedor-grafico {
+    position: relative;
+    width: 100%;
+    height: auto;
+}
+
+/* Caja de protección para el contenedor del Dendrograma */
+.contenedor-imagen {
+    background: rgba(15, 23, 42, 0.4); /* Fondo sutil oscuro */
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.contenedor-imagen img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    border-radius: 4px;
+}

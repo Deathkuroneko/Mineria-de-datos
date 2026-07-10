@@ -77,4 +77,4 @@ if __name__ == "__main__":
     # Parámetros de control: puedes probar con 0.01 horas (aprox. 36 segundos) 
     # para verificar que el pipeline salte de forma automática al ETL.
     # Para producción o recolección real, súbelo a 4 o más horas.
-    orquestar_pipeline_completo(horas_operacion=0.02, intervalo_muestreo=35)
+    orquestar_pipeline_completo(horas_operacion=4, intervalo_muestreo=35)

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Minería de Datos Aéreos - UCE</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+    <header>
+        <h1>📊 Dashboard Analítico: OpenSky Data Pipeline</h1>
+        <p>Minería No Supervisada en Tiempo Real (K-Means & Isolation Forest)</p>
+    </header>
+
+    <main class="dashboard-grid">
+        <section class="card mapa-container">
+            <h2>🌍 Monitoreo de Espacio Aéreo Internacional</h2>
+            <div id="mapa"></div>
+        </section>
+
+        <section class="card">
+            <h2>🤖 Distribución Kinetic-Clusters (K-Means)</h2>
+            <canvas id="chartKmeans"></canvas>
+        </section>
+
+        <section class="card">
+            <h2>⚠️ Alertas de Seguridad (Anomalías Detectadas)</h2>
+            <div id="contador-anomalias" class="metric-bad">0</div>
+            <p>Vuelos fuera de los límites operacionales normales.</p>
+        </section>
+    </main>
+
+    <h2 class="seccion-titulo">🧠 Sustento Técnico y Optimización Algorítmica</h2>
+    
+    <section class="metodologia-grid">
+        
+        <div class="card">
+            <h2>📊 Optimización de Parámetros: Método del Codo</h2>
+            <div class="contenedor-grafico">
+                <canvas id="chartCodo"></canvas>
+            </div>
+        </div>
+
+        <div class="card card-flex">
+            <h2>🌲 Taxonomía de Datos: Dendrograma Jerárquico</h2>
+            <div class="contenedor-imagen">
+                <img src="dendrograma_jerarquico.png" alt="Dendrograma Jerárquico Criterio de Ward">
+            </div>
+        </div>
+
+    </section>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
