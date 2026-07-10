@@ -12,6 +12,12 @@ let capaAviones = L.layerGroup().addTo(mapa);
 let baseDeDatosCompleta = [];
 let listaFechasUnicas = [];
 let indiceCronogramaActual = 0;
+let ultimoLoteSilhouette = null;
+
+// Registrar el plugin de anotación (después de cargar Chart.js y el plugin)
+if (typeof ChartAnnotation !== 'undefined') {
+    Chart.register(ChartAnnotation);
+}
 
 // ======================================================================
 // 2. INICIALIZAR LOS GRÁFICOS CON CHART.JS
@@ -39,40 +45,61 @@ const graficoKMeans = new Chart(ctxKMeans, {
 // Gráfico B: Optimización Dinámica (Método del Codo)
 const ctxCodo = document.getElementById('chartCodo').getContext('2d');
 const graficoCodo = new Chart(ctxCodo, {
-    type: 'line', 
+    type: 'line',
     data: {
-        labels: [], 
+        labels: [],
         datasets: [{
             label: 'Inercia Matemática (WCSS)',
             data: [],
-            borderColor: '#a855f7', 
+            borderColor: '#a855f7',
             backgroundColor: 'rgba(168, 85, 247, 0.1)',
             borderWidth: 2,
-            tension: 0.3, 
-            pointRadius: 5,               // Puntos ligeramente más grandes
+            tension: 0.3,
+            pointRadius: 5,
             pointBackgroundColor: '#a855f7'
         }]
     },
     options: {
         responsive: true,
         plugins: {
-            legend: { labels: { color: '#ffffff' } }
+            legend: { labels: { color: '#ffffff' } },
+            annotation: {
+                annotations: {
+                    codoLine: {
+                        type: 'line',
+                        mode: 'vertical',
+                        scaleID: 'x',
+                        value: null,  // se actualizará dinámicamente
+                        borderColor: '#ef4444',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        label: {
+                            content: 'Codo',
+                            enabled: true,
+                            position: 'top',
+                            backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                            color: '#fff',
+                            font: { weight: 'bold', size: 10 }
+                        }
+                    }
+                }
+            }
         },
         scales: {
-            x: { 
-                ticks: { color: '#94a3b8' }, 
+            x: {
+                ticks: { color: '#94a3b8' },
                 grid: { color: '#334155' },
                 title: { display: true, text: 'Número de Clusters (K)', color: '#ffffff' }
             },
-            y: { 
-                // CRÍTICO: No forzar el inicio en 0 para que la escala resalte la curva real
-                beginAtZero: false, 
-                ticks: { color: '#94a3b8' }, 
+            y: {
+                beginAtZero: false,
+                ticks: { color: '#94a3b8' },
                 grid: { color: '#334155' },
                 title: { display: true, text: 'Inercia (WCSS)', color: '#ffffff' }
             }
         }
     }
+    // ⚠️ ELIMINAR: plugins: [ChartAnnotation]  <--- Ya no es necesario
 });
 
 // ======================================================================
@@ -91,13 +118,120 @@ async function cargarMetodoCodoDinamico() {
             return;
         }
         
-        // Asignar los vectores calculados por Python
-        graficoCodo.data.labels = data.k;
-        graficoCodo.data.datasets[0].data = data.wcss;
+        const k_values = data.k;
+        const wcss_values = data.wcss;
+        
+        // Actualizar datos del gráfico
+        graficoCodo.data.labels = k_values;
+        graficoCodo.data.datasets[0].data = wcss_values;
         graficoCodo.update();
-        console.log(`✔️ ¡Gráfica del Codo renderizada! Lote analizado: ${data.info_lote} (${data.registros_procesados} aviones).`);
+        
+        // Calcular el punto de codo (método de máxima distancia)
+        if (k_values && k_values.length >= 3) {
+            const x1 = k_values[0];
+            const y1 = wcss_values[0];
+            const x2 = k_values[k_values.length - 1];
+            const y2 = wcss_values[wcss_values.length - 1];
+            let maxDist = -1;
+            let codoK = k_values[1]; // valor por defecto
+            for (let i = 1; i < k_values.length - 1; i++) {
+                const x0 = k_values[i];
+                const y0 = wcss_values[i];
+                // Distancia perpendicular desde el punto (x0,y0) a la línea (x1,y1)-(x2,y2)
+                const numer = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
+                const denom = Math.sqrt((y2 - y1) ** 2 + (x2 - x1) ** 2);
+                const dist = numer / denom;
+                if (dist > maxDist) {
+                    maxDist = dist;
+                    codoK = x0;
+                }
+            }
+            // Mostrar K óptimo en el DOM
+            const codoElement = document.getElementById('codo-optimo');
+            if (codoElement) {
+                codoElement.innerText = `K óptimo estimado: ${codoK}`;
+            }
+            
+            // ✅ ACTUALIZAR LA ANOTACIÓN CON EL VALOR DE codoK
+            if (graficoCodo.options.plugins && graficoCodo.options.plugins.annotation) {
+                graficoCodo.options.plugins.annotation.annotations.codoLine.value = codoK;
+                graficoCodo.update(); // <--- necesario para reflejar el cambio
+                console.log("Datos del codo recibidos:", k_values, wcss_values);
+            }
+        }
     } catch (error) {
         console.error("Error cargando el gráfico del codo:", error);
+    }
+}
+
+// Carga el dendrograma para un lote dado por su fecha
+async function cargarDendrogramaLote(fechaLote) {
+    try {
+        // Si no se pasa fecha, se usará el último lote automáticamente (backend)
+        let url = 'http://127.0.0.1:8000/api/dendrograma-lote?';
+        if (fechaLote) {
+            url += `fecha_lote=${encodeURIComponent(fechaLote)}&`;
+        }
+        url += 'sample_size=400';
+        
+        console.log(`Solicitando dendrograma para lote: ${fechaLote || 'último'}`);
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error("Error dendrograma:", data.error);
+            return;
+        }
+        
+        // Actualizar la imagen en el contenedor
+        const imgElement = document.getElementById('dendrograma-img');
+        if (imgElement) {
+            imgElement.src = `data:image/png;base64,${data.imagen}`;
+            imgElement.alt = `Dendrograma - Lote ${data.fecha_lote} (${data.muestras} muestras)`;
+        }
+        console.log(`Dendrograma actualizado para lote: ${data.fecha_lote} (${data.muestras} muestras)`);
+    } catch (error) {
+        console.error("Error cargando dendrograma:", error);
+    }
+}
+
+// cargar de parametro Silhouette
+async function cargarSilhouette(fechaLote, k = 3) {
+    try {
+        if (ultimoLoteSilhouette === fechaLote) return; // Evita duplicados
+        console.log(`Solicitando silueta para lote: ${fechaLote}`);
+        const url = `http://127.0.0.1:8000/api/silhouette?fecha_lote=${encodeURIComponent(fechaLote)}&k=${k}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.error) {
+            console.error("Error silueta:", data.error);
+            return;
+        }
+        
+        // Actualizar el DOM
+        const silMeanElement = document.getElementById('silhouette-mean');
+        if (silMeanElement) {
+            silMeanElement.innerText = data.silhouette_mean.toFixed(3);
+            // Opcional: cambiar color según valor (verde > 0.7, naranja > 0.4, rojo < 0.4)
+            if (data.silhouette_mean > 0.7) silMeanElement.style.color = '#4ade80';
+            else if (data.silhouette_mean > 0.4) silMeanElement.style.color = '#facc15';
+            else silMeanElement.style.color = '#f87171';
+        }
+        
+        // Mostrar silueta por clúster (opcional)
+        const silPerClusterElement = document.getElementById('silhouette-per-cluster');
+        if (silPerClusterElement) {
+            let html = '';
+            for (const [cluster, value] of Object.entries(data.silhouette_per_cluster)) {
+                html += `<span style="margin-right: 15px;">Clúster ${cluster}: ${parseFloat(value).toFixed(3)}</span>`;
+            }
+            silPerClusterElement.innerHTML = html;
+        }
+        
+        ultimoLoteSilhouette = fechaLote;
+        console.log(`Silueta actualizada para lote: ${fechaLote} (media: ${data.silhouette_mean.toFixed(3)})`);
+    } catch (error) {
+        console.error("Error cargando silueta:", error);
     }
 }
 
@@ -137,6 +271,7 @@ async function inicializarSimulador() {
 // 4. MOTOR DE LA SIMULACIÓN TEMPORAL (ITERADOR)
 // ======================================================================
 function ejecutarPasoSimulacion() {
+    // ... (sin cambios, igual que antes)
     if (indiceCronogramaActual >= listaFechasUnicas.length) {
         console.log("Fin de la línea de tiempo alcanzada. Reiniciando simulación...");
         indiceCronogramaActual = 0;
@@ -145,19 +280,19 @@ function ejecutarPasoSimulacion() {
     const fechaLoteActual = listaFechasUnicas[indiceCronogramaActual];
     const avionesDelLote = baseDeDatosCompleta.filter(v => v.fecha_captura_sistema === fechaLoteActual);
 
-    // Filtrar duplicados por ICAO24 dentro del mismo lote por consistencia visual
+    cargarSilhouette(fechaLoteActual, 3); // K=3 fijo
+    cargarDendrogramaLote(fechaLoteActual);
+    // Filtrar duplicados por ICAO24 dentro del mismo lote
     const mapaAvionesUnicos = new Map();
     avionesDelLote.forEach(reg => {
         mapaAvionesUnicos.set(reg.icao24, reg);
     });
 
-    // Limpiar pantalla anterior
     capaAviones.clearLayers();
     
     let conteoClusters = [0, 0, 0];
     let totalAnomalias = 0;
 
-    // Renderizar transpondedores del lote actual
     mapaAvionesUnicos.forEach(avion => {
         if(avion.cluster_vuelo !== undefined && avion.cluster_vuelo !== null) {
             conteoClusters[avion.cluster_vuelo]++;
@@ -199,7 +334,6 @@ function ejecutarPasoSimulacion() {
         }
     });
 
-    // Actualizar elementos dinámicos del DOM
     graficoKMeans.data.datasets[0].data = conteoClusters;
     graficoKMeans.update();
     
@@ -211,6 +345,8 @@ function ejecutarPasoSimulacion() {
     console.log(`[Simulador UCE] Lote: ${fechaLoteActual} | Aviones en pantalla: ${mapaAvionesUnicos.size}`);
     indiceCronogramaActual++;
 }
+
+
 
 // Inicializar el sistema completo
 inicializarSimulador();

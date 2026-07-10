@@ -6,6 +6,8 @@
     <title>Dashboard de Minería de Datos Aéreos - UCE</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="estilos.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 </head>
 <body>
 
@@ -30,6 +32,21 @@
             <div id="contador-anomalias" class="metric-bad">0</div>
             <p>Vuelos fuera de los límites operacionales normales.</p>
         </section>
+
+        <section class="card">
+            <h2>📊 Validación de Clustering: Coeficiente de Silueta</h2>
+            <div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap;">
+                <div style="font-size: 2.5rem; font-weight: bold;" id="silhouette-mean">---</div>
+                <div style="font-size: 1rem; color: #94a3b8;">(K=3, lote actual)</div>
+            </div>
+            <div style="margin-top: 10px; font-size: 0.9rem; color: #cbd5e1;" id="silhouette-per-cluster">
+                Cargando...
+            </div>
+            <p style="margin-top: 10px; font-size: 0.85rem; color: #94a3b8;">
+                El coeficiente de silueta mide qué tan separados están los clústeres. 
+                Valores cercanos a 1 indican buena separación.
+            </p>
+        </section>
     </main>
 
     <h2 class="seccion-titulo">🧠 Sustento Técnico y Optimización Algorítmica</h2>
@@ -39,14 +56,15 @@
         <div class="card">
             <h2>📊 Optimización de Parámetros: Método del Codo</h2>
             <div class="contenedor-grafico">
+                <div id="codo-optimo" style="color: #a855f7; font-weight: bold; margin-top: 10px; text-align: center;">K óptimo calculando...</div>
                 <canvas id="chartCodo"></canvas>
             </div>
         </div>
 
         <div class="card card-flex">
-            <h2>🌲 Taxonomía de Datos: Dendrograma Jerárquico</h2>
+            <h2>🌲 Dendrograma Jerárquico (muestra dinámica por lote)</h2>
             <div class="contenedor-imagen">
-                <img src="dendrograma_jerarquico.png" alt="Dendrograma Jerárquico Criterio de Ward">
+                <img id="dendrograma-img" src="" alt="Cargando dendrograma..." style="max-width:100%;">
             </div>
         </div>
 
