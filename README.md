@@ -1,10 +1,20 @@
-PS C:\Users\death\Downloads\PP> python -m venv .venv
+## INSTALACION DE ENTORNO (POWERSHELL)
+**Crear entorno**
+python -m venv .venv
+**Para ejecutar Script**
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-PS C:\Users\death\Downloads\PP> .\.venv\Scripts\Activate.ps1              
-(.venv) PS C:\Users\death\Downloads\PP> pip install requests pandas
+**Activar entorno**
+.venv\Scripts\Activate.ps1
+**Instalar Requerimientos**
+python.exe -m pip install --upgrade pip
+pip install -r requirements.txt
+**Ejecutar el Script desde Visualizacion**
+python test.py
+**Abrir el index en un navegador**
+index.html
 
-python test.py 
-
+**Borrar entorno**
+Remove-Item -Recurse -Force .venv, __pycache__
 ----
 Datos del mapa de calor
 
