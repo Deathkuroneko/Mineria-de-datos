@@ -1,7 +1,12 @@
 // ======================================================================
 // 1. INICIALIZAR EL MAPA GLOBAL
 // ======================================================================
-const mapa = L.map('mapa').setView([20.0, -10.0], 2);
+const mapa = L.map('mapa', {
+    worldCopyJump: false,  // Evita que el mundo se repita al desplazarse
+    maxBounds: L.latLngBounds([-90, -180], [90, 180]), // Limita al mundo real
+    maxZoom: 18,  // Zoom máximo (acercar)
+    minZoom: 2    // Zoom mínimo (alejar) - con 2 ves el mundo completo sin repetición
+}).setView([20.0, -10.0], 2);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap &copy; CARTO'
 }).addTo(mapa);
@@ -16,7 +21,7 @@ let ultimoLoteSilhouette = null;
 let ultimoLoteScatter = null;
 let ultimoLoteEstadisticas = null;
 let datosEvolucionCompleta = [];
-const VENTANA_LOTES = 6;
+const VENTANA_LOTES = 4;
 let ultimoLoteMapaCalor = null;
 
 // 🔥 OPTIMIZACIÓN 1: Map para acceso rápido por fecha
@@ -316,6 +321,101 @@ async function actualizarScatter(fechaLote) {
     }
 }
 
+// Cargar resultados de minería (centroides, anomalías, etc.)
+async function cargarResultadosMineria() {
+    try {
+        const response = await fetch('http://127.0.0.1:8000/api/mineria-resultados');
+        const data = await response.json();
+        if (data.error) {
+            console.error("Error resultados minería:", data.error);
+            return;
+        }
+
+        // 1. Mostrar porcentaje de anomalías
+        const porcentajeEl = document.getElementById('global-porcentaje-anomalias');
+        if (porcentajeEl) {
+            porcentajeEl.textContent = data.porcentaje_anomalias.toFixed(2) + '%';
+        }
+
+        // 2. Obtener distribución global de clústeres (desde estadísticas globales)
+        let clusterDist = {};
+        try {
+            const statsResponse = await fetch('http://127.0.0.1:8000/api/estadisticas-globales');
+            const statsData = await statsResponse.json();
+            if (!statsData.error && statsData.cluster_global) {
+                clusterDist = JSON.parse(statsData.cluster_global);
+            }
+        } catch (err) {
+            console.warn("No se pudo obtener la distribución de clústeres:", err);
+        }
+
+        // 3. Generar tarjetas de centroides dinámicamente
+        const container = document.getElementById('centroides-container');
+        if (!container) {
+            console.warn("Contenedor 'centroides-container' no encontrado en el DOM.");
+            return;
+        }
+
+        // Nombres descriptivos para los primeros 3 clústeres (si existen)
+        const nombresPerfiles = {
+            0: '🌍 Tierra / Rodaje',
+            1: '✈️ Crucero',
+            2: '⬆️ Ascenso / Aproximación',
+            3: '🔄 Maniobra / Espera',      // si aparece un cuarto perfil
+            4: '📦 Carga / Militar',         // si aparece un quinto
+        };
+        // Paleta de colores (se repetirá cíclicamente si hay más de 3)
+        const colores = [
+            '#38bdf8', // azul
+            '#a855f7', // morado
+            '#eab308', // amarillo
+            '#f97316', // naranja
+            '#ec4899', // rosa
+            '#14b8a6', // turquesa
+            '#8b5cf6', // violeta
+            '#f59e0b'  // ámbar
+        ];
+
+        // Construir HTML de las tarjetas
+        let html = '';
+        data.centroides.forEach((centroide, index) => {
+            const perfil = centroide.perfil;
+            // Usar nombre descriptivo si existe, o genérico
+            const nombre = nombresPerfiles[perfil] || `Perfil ${perfil}`;
+            const color = colores[perfil % colores.length];
+            const count = clusterDist[perfil] || 0;
+            
+            // Convertir color hex a rgb para el fondo semitransparente
+            const rgb = hexToRgb(color);
+            
+            html += `
+                <div style="background: rgba(${rgb}, 0.1); border: 1px solid ${color}; border-radius: 8px; padding: 0.8rem; text-align: center;">
+                    <div style="font-weight: bold; color: ${color};">${nombre}</div>
+                    <div style="font-size: 0.9rem; color: #94a3b8; margin: 0.3rem 0;">
+                        Aviones: <span style="color: #f8fafc; font-weight: bold;">${count.toLocaleString()}</span>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #cbd5e1; margin-top: 0.3rem;">
+                        Alt: ${centroide.altitud.toFixed(0)} m<br>
+                        Vel: ${centroide.velocidad.toFixed(0)} km/h<br>
+                        TV: ${centroide.tasa_vertical.toFixed(1)} m/s
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+
+        console.log("✅ Resultados de minería cargados (dinámicos):", data);
+    } catch (error) {
+        console.error("Error cargando resultados de minería:", error);
+    }
+}
+
+// Función auxiliar para convertir hex a rgb
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255,255,255';
+}
+
 // Carga el dendrograma para un lote dado por su fecha
 async function cargarDendrogramaLote(fechaLote) {
     try {
@@ -358,28 +458,49 @@ async function cargarSilhouette(fechaLote, k = 3) {
             return;
         }
         
-        // ✅ ACTUALIZAR EL DOM
+        // Actualizar valor medio
         const silMeanElement = document.getElementById('silhouette-mean');
         if (silMeanElement) {
-            silMeanElement.innerText = data.silhouette_mean.toFixed(3);
-            // Cambiar color según valor
-            if (data.silhouette_mean > 0.7) {
-                silMeanElement.style.color = '#4ade80'; // verde
-            } else if (data.silhouette_mean > 0.4) {
-                silMeanElement.style.color = '#facc15'; // amarillo
-            } else {
-                silMeanElement.style.color = '#f87171'; // rojo
+            const valor = data.silhouette_mean;
+            silMeanElement.innerText = valor.toFixed(3);
+            // Color según valor
+            let color;
+            if (valor > 0.7) color = '#4ade80';
+            else if (valor > 0.4) color = '#facc15';
+            else color = '#f87171';
+            silMeanElement.style.color = color;
+            
+            // Actualizar barra de progreso
+            const bar = document.getElementById('silhouette-bar');
+            if (bar) {
+                // Escalar el valor a porcentaje (0-1 → 0-100%)
+                const porcentaje = Math.min(valor * 100, 100);
+                bar.style.width = porcentaje + '%';
+                bar.style.background = color;
             }
         }
         
+        // Actualizar valores por clúster (badges)
         const silPerClusterElement = document.getElementById('silhouette-per-cluster');
         if (silPerClusterElement) {
+            const clusterColors = ['#38bdf8', '#a855f7', '#eab308']; // azul, morado, amarillo
             let html = '';
-            // data.silhouette_per_cluster es un objeto { "0": 0.12, "1": 0.34, ... }
-            for (const [cluster, value] of Object.entries(data.silhouette_per_cluster)) {
-                html += `<span style="margin-right: 15px;">Clúster ${cluster}: ${parseFloat(value).toFixed(3)}</span>`;
+            const entries = Object.entries(data.silhouette_per_cluster);
+            for (const [cluster, value] of entries) {
+                const color = clusterColors[parseInt(cluster)] || '#94a3b8';
+                html += `
+                    <span style="display: inline-block; background: rgba(51, 65, 85, 0.5); border-left: 4px solid ${color}; padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.9rem; color: #e2e8f0;">
+                        Clúster ${cluster}: <strong style="color: ${color};">${parseFloat(value).toFixed(3)}</strong>
+                    </span>
+                `;
             }
-            silPerClusterElement.innerHTML = html;
+            silPerClusterElement.innerHTML = html || '<span style="color: #94a3b8;">No hay datos</span>';
+        }
+        
+        // Actualizar fecha del lote
+        const fechaElement = document.getElementById('silhouette-fecha');
+        if (fechaElement) {
+            fechaElement.innerText = `Lote: ${data.fecha_lote}`;
         }
         
         ultimoLoteSilhouette = fechaLote;
@@ -428,12 +549,11 @@ async function actualizarEstadisticas(fechaLote) {
     }
 }
 
-async function cargarMapaCalor(fechaLote) {
+async function cargarMapaCalor() {
     try {
-        if (ultimoLoteMapaCalor === fechaLote) return;
-        console.log(`Solicitando mapa de calor para lote: ${fechaLote}`);
-        const url = `http://127.0.0.1:8000/api/mapa-calor?fecha_lote=${encodeURIComponent(fechaLote)}`;
-        const response = await fetch(url);
+        if (ultimoLoteMapaCalor === 'estatico') return;
+        console.log("Solicitando mapa de calor estático...");
+        const response = await fetch('http://127.0.0.1:8000/api/mapa-calor');
         const data = await response.json();
         if (data.error) {
             console.error("Error mapa de calor:", data.error);
@@ -442,11 +562,95 @@ async function cargarMapaCalor(fechaLote) {
         const imgElement = document.getElementById('mapa-calor-img');
         if (imgElement) {
             imgElement.src = `data:image/png;base64,${data.imagen}`;
-            ultimoLoteMapaCalor = fechaLote;
-            console.log(`Mapa de calor actualizado para lote: ${fechaLote}`);
+            ultimoLoteMapaCalor = 'estatico';
+            console.log("Mapa de calor estático cargado.");
         }
     } catch (error) {
         console.error("Error cargando mapa de calor:", error);
+    }
+}
+
+async function cargarMetricasPipeline() {
+    try {
+        const response = await fetch('http://127.0.0.1:8000/api/pipeline-metrics');
+        const data = await response.json();
+        if (data.error) {
+            console.error("Error métricas pipeline:", data.error);
+            // Mostrar mensaje de "No disponible"
+            document.querySelectorAll('[id^="metric-"]').forEach(el => el.innerText = 'N/A');
+            document.getElementById('pipeline-estado').innerText = 'No disponible';
+            return;
+        }
+
+        // ===== DATOS GLOBALES =====
+        document.getElementById('pipeline-estado').innerText = data.estado_general || 'EXITOSO';
+        document.getElementById('pipeline-inicio').innerText = data.timestamp_inicio || '---';
+        document.getElementById('pipeline-fin').innerText = data.timestamp_fin || '---';
+        document.getElementById('pipeline-tiempo-total').innerText = data.tiempo_total_minutos.toFixed(1) + ' min';
+        document.getElementById('pipeline-config').innerText = `${data.horas_operacion}h / ${data.intervalo_muestreo}s`;
+        document.getElementById('pipeline-csv-nombre').innerText = data.ingesta.archivo_csv || '---';
+        document.getElementById('pipeline-parquet-nombre').innerText = data.etl.archivo_parquet || '---';
+
+        // ===== INGESTA =====
+        const ing = data.ingesta;
+        document.getElementById('ingesta-registros').innerText = ing.total_registros.toLocaleString();
+        document.getElementById('ingesta-ciclos').innerText = ing.ciclos_ejecutados;
+        document.getElementById('ingesta-ciclos-totales').innerText = ing.ciclos_totales;
+        // Convertir segundos a formato legible (minutos)
+        const ingTiempoMin = (ing.tiempo_ejecucion_segundos / 60).toFixed(1);
+        document.getElementById('ingesta-tiempo').innerText = ingTiempoMin + ' min';
+
+        // ===== ETL =====
+        const etl = data.etl;
+        document.getElementById('etl-registros-iniciales').innerText = etl.registros_iniciales.toLocaleString();
+        document.getElementById('etl-registros-finales').innerText = etl.registros_finales.toLocaleString();
+        document.getElementById('etl-tamano-csv').innerText = etl.tamano_csv_mb.toFixed(1) + ' MB';
+        document.getElementById('etl-tamano-parquet').innerText = etl.tamano_parquet_mb.toFixed(1) + ' MB';
+        document.getElementById('etl-reduccion').innerText = etl.reduccion_porcentaje.toFixed(1) + '%';
+        document.getElementById('etl-tiempo').innerText = etl.duracion_segundos.toFixed(1) + ' s';
+
+        // Barra de reducción
+        const barra = document.getElementById('etl-reduccion-barra');
+        if (barra) {
+            const reduccion = Math.min(etl.reduccion_porcentaje, 100);
+            barra.style.width = reduccion + '%';
+            // Cambiar color según el valor
+            if (reduccion > 70) barra.style.background = '#34d399';
+            else if (reduccion > 40) barra.style.background = '#fbbf24';
+            else barra.style.background = '#f87171';
+        }
+
+        console.log("Métricas del pipeline cargadas:", data);
+    } catch (error) {
+        console.error("Error cargando métricas del pipeline:", error);
+        document.querySelectorAll('[id^="metric-"]').forEach(el => el.innerText = 'Error');
+    }
+}
+
+async function cargarEstadisticasGlobales() {
+    try {
+        const response = await fetch('http://127.0.0.1:8000/api/estadisticas-globales');
+        const data = await response.json();
+        if (data.error) {
+            console.error("Error estadísticas globales:", data.error);
+            return;
+        }
+        // Actualizar DOM (métricas rápidas)
+        document.getElementById('global-total-registros').innerText = data.total_registros.toLocaleString();
+        document.getElementById('global-aviones-unicos').innerText = data.total_aviones_unicos.toLocaleString();
+        document.getElementById('global-lotes').innerText = data.total_lotes;
+        document.getElementById('global-anomalias').innerText = data.total_anomalias.toLocaleString();
+        document.getElementById('global-velocidad-media').innerText = data.velocidad_global_media.toFixed(1);
+        document.getElementById('global-altitud-media').innerText = data.altitud_global_media.toFixed(0);
+        document.getElementById('global-tv-media').innerText = data.tv_global_media.toFixed(1);
+
+        // Porcentaje de anomalías
+        const porcentajeAnomalias = (data.total_anomalias / data.total_registros * 100).toFixed(2);
+        document.getElementById('global-porcentaje-anomalias').innerText = porcentajeAnomalias + '%';
+
+        console.log("Estadísticas globales cargadas:", data);
+    } catch (error) {
+        console.error("Error cargando estadísticas globales:", error);
     }
 }
 
@@ -498,9 +702,12 @@ async function inicializarSimulador() {
 
         // 🔥 OPTIMIZACIÓN 4: Cargar mapa de calor estático una sola vez con el primer lote
         if (listaFechasUnicas.length > 0) {
-            cargarMapaCalor(listaFechasUnicas[0]);
             ejecutarPasoSimulacion();
             cargarMetodoCodoDinamico();
+            await cargarEstadisticasGlobales();
+            await cargarResultadosMineria();
+            cargarMetricasPipeline();
+            cargarMapaCalor();
             setInterval(ejecutarPasoSimulacion, 5000);
         }
 
@@ -529,7 +736,6 @@ function ejecutarPasoSimulacion() {
     cargarDendrogramaLote(fechaLoteActual);
     actualizarScatter(fechaLoteActual);
     actualizarEstadisticas(fechaLoteActual);
-    // 🔥 OPTIMIZACIÓN 7: Eliminada la llamada a cargarMapaCalor
 
     // ===== ACTUALIZAR GRÁFICO DE EVOLUCIÓN (con los datos hasta el lote actual) =====
     const inicio = Math.max(0, indiceCronogramaActual - VENTANA_LOTES + 1);
@@ -567,18 +773,25 @@ function ejecutarPasoSimulacion() {
         }
 
         if (avion.latitude !== null && avion.longitude !== null) {
-            const colorMarcador = avion.es_anomalia ? '#ef4444' : '#38bdf8';
+            // Colores por clúster
+            const coloresCluster = ['#38bdf8', '#a855f7', '#eab308'];
+            const cluster = avion.cluster_vuelo;
+            const fillColor = (cluster !== undefined && cluster !== null && cluster >= 0 && cluster < coloresCluster.length) 
+                ? coloresCluster[cluster] 
+                : '#94a3b8'; // gris por defecto
+            const borderColor = avion.es_anomalia ? '#ef4444' : '#ffffff';
+            const borderWeight = avion.es_anomalia ? 2 : 0.5;
             
             const velocidad = avion.velocity_kmh ? `${Math.round(avion.velocity_kmh)} km/h` : '0 km/h';
             const tasaVertical = avion.vertical_rate ? `${Math.round(avion.vertical_rate)} m/s` : '0 m/s';
             const altitud = avion.baro_altitude ? `${Math.round(avion.baro_altitude)} m` : 'En superficie';
             const callsignLimpio = avion.callsign ? avion.callsign.trim() : 'S/N';
 
-            L.circleMarker([avion.latitude, avion.longitude], {
-                radius: 5,
-                fillColor: colorMarcador,
-                color: '#ffffff',
-                weight: 0.5,
+            L.circle([avion.latitude, avion.longitude], {
+                radius: 800,  // Radio en metros (ajusta este valor según prefieras)
+                fillColor: fillColor,
+                color: borderColor,
+                weight: borderWeight,
                 fillOpacity: 0.9
             })
             .bindPopup(`

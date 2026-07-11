@@ -1,0 +1,26 @@
+{
+  "timestamp_inicio": "2026-07-11 12:58:02",
+  "horas_operacion": 4,
+  "intervalo_muestreo": 35,
+  "ingesta": {
+    "total_registros": 4486805,
+    "ciclos_ejecutados": 411,
+    "ciclos_totales": 411,
+    "tiempo_ejecucion_segundos": 14403.55,
+    "archivo_csv": "opensky_datos_masivos.csv"
+  },
+  "etl": {
+    "registros_iniciales": 6571476,
+    "registros_finales": 5628989,
+    "tamano_csv_mb": 852.82,
+    "tamano_parquet_mb": 161.11,
+    "reduccion_porcentaje": 81.11,
+    "duracion_segundos": 17.48,
+    "archivo_csv": "opensky_datos_masivos.csv",
+    "archivo_parquet": "opensky_datos_optimizados.parquet",
+    "duracion_total_segundos": 17.69
+  },
+  "tiempo_total_minutos": 240.35,
+  "timestamp_fin": "2026-07-11 16:58:24",
+  "estado_general": "EXITOSO"
+}

@@ -8,6 +8,17 @@ PARQUET_MINERIA = "opensky_resultados_mineria.parquet"
 PARQUET_ESTADISTICAS_LOTES = "opensky_estadisticas_lotes.parquet"
 PARQUET_ESTADISTICAS_GLOBALES = "opensky_estadisticas_globales.parquet"
 
+# Leer K óptimo del JSON de minería
+def get_k_optimo():
+    try:
+        with open("mineria_resultados.json", "r") as f:
+            data = json.load(f)
+            return int(data.get("n_clusters", 3))  # Convertir a int
+    except:
+        return 3
+
+K_CLUSTERS = get_k_optimo()
+
 def calcular_estadisticas_lotes():
     """
     Calcula estadísticas agregadas por lote (fecha_captura_sistema)
@@ -70,8 +81,8 @@ def calcular_estadisticas_lotes():
             counts = df_lote['cluster_vuelo'].value_counts()
             for k, v in counts.items():
                 cluster_counts[int(k)] = int(v)
-        # Asegurar que los 3 clústeres estén presentes
-        for c in range(3):
+        # Asegurar que los clústeres estén presentes
+        for c in range(K_CLUSTERS):
             if c not in cluster_counts:
                 cluster_counts[c] = 0
         

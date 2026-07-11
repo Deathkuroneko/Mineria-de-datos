@@ -5,11 +5,23 @@ from sklearn.preprocessing import StandardScaler
 from scipy.cluster.hierarchy import linkage, fcluster
 from sklearn.metrics import silhouette_score, silhouette_samples
 import os
+import json
 
 PARQUET_OPTIMIZADO = "opensky_datos_optimizados.parquet"
 PARQUET_SILUETA = "opensky_siluetas_por_lote.parquet"
 
-def precalcular_siluetas(k=3):
+# Leer K óptimo del JSON de minería
+def get_k_optimo():
+    try:
+        with open("mineria_resultados.json", "r") as f:
+            data = json.load(f)
+            return int(data.get("n_clusters", 3))  # Convertir a int
+    except:
+        return 3
+
+K_CLUSTERS = get_k_optimo()
+
+def precalcular_siluetas(k=K_CLUSTERS):
     print("📊 Precalculando coeficiente de silueta por lote...")
     df = pd.read_parquet(PARQUET_OPTIMIZADO)
     fechas = df['fecha_captura_sistema'].unique()
@@ -44,4 +56,4 @@ def precalcular_siluetas(k=3):
     print(f"✅ Siluetas guardadas en {PARQUET_SILUETA}")
 
 if __name__ == "__main__":
-    precalcular_siluetas(k=3)
+    precalcular_siluetas()

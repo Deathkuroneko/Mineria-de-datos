@@ -1,0 +1,28 @@
+{
+  "total_registros_procesados": 5628989,
+  "n_clusters": "3",
+  "k_optimo_calculado": "3",
+  "centroides": [
+    {
+      "perfil": 0,
+      "altitud": 5458.799021752076,
+      "velocidad": 657.3209850397201,
+      "tasa_vertical": 9.273251067049996
+    },
+    {
+      "perfil": 1,
+      "altitud": 1378.6483421928388,
+      "velocidad": 247.95807547830213,
+      "tasa_vertical": -1.3280895126677008
+    },
+    {
+      "perfil": 2,
+      "altitud": 10282.837701048218,
+      "velocidad": 829.7484437431085,
+      "tasa_vertical": -0.9779427688240953
+    }
+  ],
+  "anomalias_detectadas": 56290,
+  "porcentaje_anomalias": 1.0000019541697451,
+  "timestamp": "2026-07-11 17:02:29"
+}

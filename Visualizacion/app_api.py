@@ -30,6 +30,9 @@ PARENT_DIR = os.path.dirname(BASE_DIR)                 # subimos un nivel
 RUTA_OPTIMIZADO = os.path.join(PARENT_DIR, "opensky_datos_optimizados.parquet")
 RUTA_RESULTADOS = os.path.join(PARENT_DIR, "opensky_resultados_mineria.parquet")
 RUTA_SILUETA = os.path.join(PARENT_DIR, "opensky_siluetas_por_lote.parquet")
+RUTA_GLOBAL_STATS = os.path.join(PARENT_DIR, "opensky_estadisticas_globales.parquet")  
+RUTA_MINERIA_JSON = os.path.join(PARENT_DIR, "mineria_resultados.json")  
+RUTA_METRICS_JSON = os.path.join(PARENT_DIR, "pipeline_metrics.json")
 
 # Al inicio del archivo, define cuántos lotes quieres enviar
 NUM_LOTES_A_DEVOLVER = 5  # Cambia este valor según necesites
@@ -274,35 +277,6 @@ def obtener_estadisticas_lote(
     except Exception as e:
         return {"error": str(e)}
     
-@app.get("/api/estadisticas-globales")
-def obtener_estadisticas_globales():
-    try:
-        df = pd.read_parquet(RUTA_RESULTADOS)
-        total_registros = len(df)
-        total_aviones_unicos = df['icao24'].nunique()
-        total_lotes = df['fecha_captura_sistema'].nunique()
-        # Distribución global de clústeres
-        cluster_global = df['cluster_vuelo'].value_counts().to_dict()
-        cluster_global = {int(k): int(v) for k, v in cluster_global.items()}
-        # Anomalías globales
-        anomalias_global = df['es_anomalia'].sum() if 'es_anomalia' in df.columns else 0
-        # Promedios globales (velocidad, altitud, tasa vertical)
-        velocidad_mean = df['velocity_kmh'].mean()
-        altitud_mean = df['baro_altitude'].mean()
-        tv_mean = df['vertical_rate'].mean()
-        return {
-            "total_registros": total_registros,
-            "total_aviones_unicos": total_aviones_unicos,
-            "total_lotes": total_lotes,
-            "cluster_global": cluster_global,
-            "anomalias_global": int(anomalias_global),
-            "velocidad_media_global": float(velocidad_mean),
-            "altitud_media_global": float(altitud_mean),
-            "tasa_vertical_media_global": float(tv_mean)
-        }
-    except Exception as e:  
-        return {"error": str(e)}    
-    
 @app.get("/api/evolucion-temporal")
 def obtener_evolucion_temporal():
     """
@@ -340,50 +314,56 @@ def obtener_evolucion_temporal():
         return {"error": str(e)}
 
 @app.get("/api/mapa-calor")
-def obtener_mapa_calor(
-    fecha_lote: str = Query(None, description="Fecha del lote. Si no se envía, usa el último lote.")
-):
-    import seaborn as sns
-    import io
-    import base64
-    import matplotlib.pyplot as plt
-
+def obtener_mapa_calor():
     try:
-        df = pd.read_parquet(RUTA_RESULTADOS)
-        if fecha_lote is None:
-            ultima_fecha = df['fecha_captura_sistema'].max()
+        with open("mapa_calor_estatico.json", "r") as f:
+            data = json.load(f)
+        return data
+    except FileNotFoundError:
+        return {"error": "Mapa de calor estático no disponible. Ejecuta 'fase7_precalculo_mapa_calor.py' primero."}
+    except Exception as e:
+        return {"error": str(e)}
+    
+@app.get("/api/estadisticas-globales")
+def obtener_estadisticas_globales():
+    try:
+        # Intentar leer el Parquet precalculado
+        if os.path.exists(RUTA_GLOBAL_STATS):
+            df_global = pd.read_parquet(RUTA_GLOBAL_STATS)
+            stats = df_global.iloc[0].to_dict()
+            # Convertir tipos
+            for key, value in stats.items():
+                if isinstance(value, (np.int64, np.int32)):
+                    stats[key] = int(value)
+                elif isinstance(value, (np.float64, np.float32)):
+                    stats[key] = float(value)
+            return stats
         else:
-            ultima_fecha = fecha_lote
+            # Fallback: calcular sobre la marcha
+            df = pd.read_parquet(RUTA_RESULTADOS)
+            # ... (código existente)
+    except Exception as e:
+        return {"error": str(e)}
 
-        df_lote = df[df['fecha_captura_sistema'] == ultima_fecha]
-        if df_lote.empty:
-            return {"error": f"No hay datos para el lote {ultima_fecha}"}
-
-        # Seleccionar columnas numéricas relevantes
-        cols = ['velocity_kmh', 'baro_altitude', 'vertical_rate']
-        df_corr = df_lote[cols].dropna()
-        if len(df_corr) < 2:
-            return {"error": "No hay suficientes datos para calcular correlación"}
-
-        corr = df_corr.corr()
-
-        # Generar mapa de calor
-        plt.figure(figsize=(8, 6))
-        sns.heatmap(corr, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
-        plt.title(f'Mapa de calor de correlación - Lote {ultima_fecha}')
-        plt.tight_layout()
-
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png', dpi=150)
-        buf.seek(0)
-        plt.close()
-        encoded = base64.b64encode(buf.read()).decode('utf-8')
-
-        return {
-            "imagen": encoded,
-            "fecha_lote": str(ultima_fecha),
-            "variables": cols
-        }
+@app.get("/api/mineria-resultados")
+def obtener_mineria_resultados():
+    try:
+        with open(RUTA_MINERIA_JSON, "r") as f:
+            data = json.load(f)
+        return data
+    except FileNotFoundError:
+        return {"error": "Archivo de resultados de minería no encontrado. Ejecuta la Fase 4 primero."}
+    except Exception as e:
+        return {"error": str(e)}
+    
+@app.get("/api/pipeline-metrics")
+def obtener_metricas_pipeline():
+    try:
+        with open(RUTA_METRICS_JSON, "r") as f:
+            data = json.load(f)
+        return data
+    except FileNotFoundError:
+        return {"error": "Métricas del pipeline no disponibles. Ejecuta el pipeline primero."}
     except Exception as e:
         return {"error": str(e)}
 

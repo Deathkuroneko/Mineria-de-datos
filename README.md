@@ -1,10 +1,20 @@
 PS C:\Users\death\Downloads\PP> python -m venv .venv
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 PS C:\Users\death\Downloads\PP> .\.venv\Scripts\Activate.ps1              
 (.venv) PS C:\Users\death\Downloads\PP> pip install requests pandas
 
 python test.py 
 
----- 
+----
+Datos del mapa de calor
+
+python .\fase7_precalculo_mapa_calor.py
+📊 Generando mapa de calor estático con muestreo estratificado...
+   Registros totales: 5,628,989
+   Muestra total: 1,252,000 registros (626 lotes)
+✅ Mapa de calor guardado en 'Visualizacion\mapa_calor_estatico.json'
+
+----
 
 
 # PROPUESTA DE PROYECTO DE INVESTIGACIÓN Y MINERÍA DE DATOS

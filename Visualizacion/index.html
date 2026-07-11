@@ -25,28 +25,6 @@
         </section>
     </div>
 
-    <!-- ======================== MÉTRICAS RÁPIDAS ======================== -->
-    <div class="dashboard-grid" style="margin-top: 0; padding-top: 0;">
-        <!-- Estadísticas del lote actual -->
-        <section class="card" style="grid-column: span 1;">
-            <h2>📋 Estadísticas del Lote Actual</h2>
-            <div id="tabla-estadisticas" style="overflow-x: auto;">
-                <p style="color: #94a3b8;">Cargando estadísticas...</p>
-            </div>
-        </section>
-
-        <!-- Total de aviones activos (nuevo) -->
-        <!-- Anomalías -->
-        <section class="card">
-            <h2>⚠️ Alertas de Seguridad</h2>
-            <div id="contador-anomalias" class="metric-bad">0</div>
-            <p>Vuelos fuera de los límites operacionales normales.</p>
-            <h2>✈️ Aviones Activos</h2>
-            <div id="total-aviones" class="metric-bad" style="color: #38bdf8;">0</div>
-            <p>Aeronaves detectadas en el lote actual.</p>
-        </section>
-    </div>
-
     <!-- ======================== EVOLUCIÓN TEMPORAL ======================== -->
     <h2 class="seccion-titulo">📈 Evolución Temporal del Tráfico Aéreo</h2>
     <section class="metodologia-grid">
@@ -58,81 +36,265 @@
         </div>
     </section>
 
-    <!-- ======================== SUSTENTO TÉCNICO ======================== -->
+    <!-- ======================== MÉTRICAS RÁPIDAS ======================== -->
+    <div class="dashboard-grid" style="margin-top: 0; padding-top: 0;">
+        <!-- Estadísticas del lote actual -->
+        <section class="card" style="grid-column: span 1;">
+            <h2>📋 Estadísticas del Lote Actual</h2>
+            <div id="tabla-estadisticas" style="overflow-x: auto;">
+                <p style="color: #94a3b8;">Cargando estadísticas...</p>
+            </div>
+        </section>
+
+        <!-- Total de aviones activos-->
+        <!-- Anomalías -->
+        <section class="card">
+            <h2>⚠️ Alertas de Seguridad</h2>
+            <div id="contador-anomalias" class="metric-bad">0</div>
+            <p>Vuelos fuera de los límites operacionales normales.</p>
+            <h2>✈️ Aviones Activos</h2>
+            <div id="total-aviones" class="metric-bad" style="color: #38bdf8;">0</div>
+            <p>Aeronaves detectadas en el lote actual.</p>
+        </section>
+    </div>
+
     <h2 class="seccion-titulo">🧠 Sustento Técnico y Optimización Algorítmica</h2>
-    
-    <!-- Grid principal de 2 columnas -->
-    <section class="metodologia-grid" style="grid-template-columns: 1fr 1fr;">
 
-        <!-- ==================== COLUMNA IZQUIERDA ==================== -->
-        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-
-            <!-- Distribución de Clústeres -->
-            <div class="card">
-                <h2>🤖 Distribución Kinetic-Clusters (K-Means)</h2>
+        <div class="dashboard-grid" style="margin-top: 0; padding-top: 0;">
+        <!-- Estadísticas del lote actual -->
+        <section class="card" style="grid-column: span 1;">
+            <h2>🤖 Distribución Kinetic-Clusters (K-Means)</h2>
+            <div class="contenedor-grafico" style="height: 300px;">
                 <canvas id="chartKmeans"></canvas>
             </div>
+        </section>
 
-            <!-- Coeficiente de Silueta -->
-            <div class="card">
-                <h2>📊 Validación de Clustering: Coeficiente de Silueta</h2>
-                <div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap;">
-                    <div style="font-size: 2.5rem; font-weight: bold;" id="silhouette-mean">---</div>
-                    <div style="font-size: 1rem; color: #94a3b8;">(K=3, lote actual)</div>
-                </div>
-                <div style="margin-top: 10px; font-size: 0.9rem; color: #cbd5e1;" id="silhouette-per-cluster">
-                    Cargando...
-                </div>
-                <p style="margin-top: 10px; font-size: 0.85rem; color: #94a3b8;">
-                    El coeficiente de silueta mide qué tan separados están los clústeres. 
-                    Valores cercanos a 1 indican buena separación.
-                </p>
+        <!-- Total de aviones activos-->
+        <!-- Anomalías -->
+        <section class="card">
+            <h2>📊 Validación de Clustering: Coeficiente de Silueta</h2>
+            
+            <div class="silueta-header">
+                <div id="silhouette-mean" class="silueta-numero">---</div>
+                <div class="silueta-subtext">(K=3, lote actual)</div>
+                <div id="silhouette-fecha" class="silueta-fecha">Actualizando...</div>
             </div>
 
-            <!-- Método del Codo -->
-            <div class="card">
-                <h2>📊 Optimización de Parámetros: Método del Codo</h2>
-                <div class="contenedor-grafico">
-                    <div id="codo-optimo" style="color: #a855f7; font-weight: bold; margin-top: 10px; text-align: center;">K óptimo calculando...</div>
-                    <canvas id="chartCodo"></canvas>
-                </div>
+            <div class="silueta-barra-progreso">
+                <div id="silhouette-bar"></div>
             </div>
 
+            <div id="silhouette-per-cluster" class="silueta-badges">
+                <span>Cargando...</span>
+            </div>
+
+            <p class="silueta-explicacion">
+                El coeficiente de silueta mide qué tan separados están los clústeres. 
+                Valores cercanos a 1 indican buena separación.
+            </p>
+        </section>
+    </div>
+
+    <section class="metodologia-grid">
+        <div class="card" style="grid-column: span 1;">
+            <h2>📊 Optimización de Parámetros: Método del Codo</h2>
+            <div id="codo-optimo" class="codo-status">K óptimo calculando...</div>           
+            <div class="contenedor-grafico" style="height: 450px;">
+                <canvas id="chartCodo"></canvas>
+            </div>
         </div>
+    </section>
 
-        <!-- ==================== COLUMNA DERECHA ==================== -->
-        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
 
+    <section class="metodologia-grid">   
             <!-- Diagrama de Dispersión -->
-            <div class="card">
+            <div class="card" style="grid-column: span 2;">
                 <h2>📊 Análisis Cinemático: Velocidad vs Altitud</h2>
-                <div class="contenedor-grafico" style="height: 350px;">
+                <div class="contenedor-grafico" style="height: 800px;">
                     <canvas id="chartScatter"></canvas>
                 </div>
                 <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.5rem;">
                     Cada punto es una aeronave. Los colores corresponden al clúster asignado (K-Means).
                 </p>
             </div>
-
-            <!-- Dendrograma -->
-            <div class="card card-flex">
+    </section>
+    <section class="metodologia-grid" style="grid-template-columns: 1fr;"> 
+            <div class="card">
                 <h2>🌲 Dendrograma Jerárquico (muestra dinámica por lote)</h2>
-                <div class="contenedor-imagen">
-                    <img id="dendrograma-img" src="" alt="Cargando dendrograma..." style="max-width:100%; height:auto;">
+                <div class="contenedor-imagen" style="height: 900px; max-height: none; overflow: visible; background: rgba(15, 23, 42, 0.2); display: flex; align-items: center; justify-content: center;">
+                    <img id="dendrograma-img" src="" alt="Cargando dendrograma..." style="width: 100%; height: 100%; object-fit: contain;">
+                </div>
+            </div>
+    </section>
+
+    <section class="metodologia-grid" style="grid-template-columns: 1fr; margin-top: 1.5rem;">
+        <div class="card">
+            <h2>📊 Análisis de Correlaciones (Dataset Completo)</h2>
+            <div class="contenedor-imagen" style="height: 900px; max-height: none; overflow: visible; background: rgba(15, 23, 42, 0.2); display: flex; align-items: center; justify-content: center;">
+                <img id="mapa-calor-img" src="" alt="Mapa de calor cargando..." style="width: 100%; height: 100%; object-fit: contain;">
+            </div>
+            
+            <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.8rem; text-align: center; border-top: 1px solid var(--border-color); padding-top: 0.5rem;">
+                Matriz de correlación de Pearson entre las variables cinemáticas principales: velocidad, altitud y tasa vertical.
+            </p>
+        </div>
+    </section>
+
+
+    <!-- Estadísticas Globales -->
+    <section class="card" style="grid-column: span 3;">
+        <h2>📊 Estadísticas Globales del Dataset</h2>
+        <div id="estadisticas-globales" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; text-align: center;">
+            <div>
+                <div style="font-size: 2rem; font-weight: bold; color: #38bdf8;" id="global-total-registros">---</div>
+                <div style="color: #94a3b8; font-size: 0.9rem;">Registros totales</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: bold; color: #a855f7;" id="global-aviones-unicos">---</div>
+                <div style="color: #94a3b8; font-size: 0.9rem;">Aviones únicos</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: bold; color: #eab308;" id="global-lotes">---</div>
+                <div style="color: #94a3b8; font-size: 0.9rem;">Lotes capturados</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: bold; color: #ef4444;" id="global-anomalias">---</div>
+                <div style="color: #94a3b8; font-size: 0.9rem;">
+                    Anomalías totales
+                </div>
+            </div>
+            <div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: #f8fafc;" id="global-velocidad-media">---</div>
+                <div style="color: #94a3b8; font-size: 0.9rem;">Velocidad media (km/h)</div>
+            </div>
+            <div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: #f8fafc;" id="global-altitud-media">---</div>
+                <div style="color: #94a3b8; font-size: 0.9rem;">Altitud media (m)</div>
+            </div>
+
+            <div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: #f8fafc;" id="global-tv-media">---</div>
+                <div style="color: #94a3b8; font-size: 0.9rem;">Tasa vertical media (m/s)</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: bold; color: #fbbf24;" id="global-porcentaje-anomalias">---</div>
+                <div style="color: #94a3b8; font-size: 0.9rem;">% Anomalías</div>
+            </div>
+        </div>
+
+
+                <!-- Distribución y Centroides integrados -->
+        <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+            <h3 style="color: #f8fafc; font-size: 1.1rem; margin-bottom: 0.8rem;">✈️ Perfiles de Vuelo (Centroides K-Means)</h3>
+            
+            <!-- 🔥 CONTENEDOR DINÁMICO: se llenará con JavaScript -->
+            <div id="centroides-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <!-- Las tarjetas se generarán automáticamente -->
+            </div>
+        </div>
+
+        <div style="margin-top: 1rem; font-size: 0.85rem; color: #94a3b8; text-align: center;">
+            Datos calculados sobre todo el dataset histórico.
+        </div>
+    </section>
+
+
+    <!-- ======================== RESUMEN DEL PIPELINE ======================== -->
+    <section class="card" style="grid-column: span 3; margin-top: 1rem;">
+        <h2>⚙️ Resumen del Pipeline de Datos</h2>
+        
+        <!-- Estado y tiempos globales -->
+        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; background: rgba(15, 23, 42, 0.4); padding: 0.8rem 1.2rem; border-radius: 8px; margin-bottom: 1.2rem; border: 1px solid #334155;">
+            <div>
+                <span style="color: #94a3b8; font-size: 0.85rem;">Estado</span><br>
+                <span id="pipeline-estado" style="color: #34d399; font-weight: bold; font-size: 1.1rem;">---</span>
+            </div>
+            <div>
+                <span style="color: #94a3b8; font-size: 0.85rem;">Inicio</span><br>
+                <span id="pipeline-inicio" style="color: #f8fafc;">---</span>
+            </div>
+            <div>
+                <span style="color: #94a3b8; font-size: 0.85rem;">Fin</span><br>
+                <span id="pipeline-fin" style="color: #f8fafc;">---</span>
+            </div>
+            <div>
+                <span style="color: #94a3b8; font-size: 0.85rem;">Tiempo total</span><br>
+                <span id="pipeline-tiempo-total" style="color: #fbbf24; font-weight: bold;">---</span>
+            </div>
+            <div>
+                <span style="color: #94a3b8; font-size: 0.85rem;">Configuración</span><br>
+                <span id="pipeline-config" style="color: #f8fafc;">---</span>
+            </div>
+        </div>
+
+        <!-- Grid de métricas -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            
+            <!-- Bloque INGESTA -->
+            <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid #334155; border-radius: 8px; padding: 1rem;">
+                <h3 style="color: #38bdf8; margin: 0 0 0.8rem 0; font-size: 1rem;">📡 Fase de Ingesta</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.5rem;">
+                    <div>
+                        <span style="color: #94a3b8; font-size: 0.8rem;">Registros crudos</span>
+                        <div id="ingesta-registros" style="font-size: 1.2rem; font-weight: bold; color: #f8fafc;">---</div>
+                    </div>
+                    <div>
+                        <span style="color: #94a3b8; font-size: 0.8rem;">Ciclos ejecutados</span>
+                        <div id="ingesta-ciclos" style="font-size: 1.2rem; font-weight: bold; color: #f8fafc;">---</div>
+                    </div>
+                    <div>
+                        <span style="color: #94a3b8; font-size: 0.8rem;">Ciclos totales</span>
+                        <div id="ingesta-ciclos-totales" style="font-size: 1.2rem; font-weight: bold; color: #f8fafc;">---</div>
+                    </div>
+                    <div>
+                        <span style="color: #94a3b8; font-size: 0.8rem;">Tiempo de ingesta</span>
+                        <div id="ingesta-tiempo" style="font-size: 1.2rem; font-weight: bold; color: #f8fafc;">---</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Mapa de Calor -->
-            <div class="card card-flex">
-                <h2>📊 Análisis de Correlaciones</h2>
-                <div class="contenedor-imagen">
-                    <img id="mapa-calor-img" src="" alt="Mapa de calor cargando..." style="max-width:100%; height:auto;">
+            <!-- Bloque ETL -->
+            <div style="background: rgba(52, 211, 153, 0.05); border: 1px solid #334155; border-radius: 8px; padding: 1rem;">
+                <h3 style="color: #34d399; margin: 0 0 0.8rem 0; font-size: 1rem;">🔄 Fase ETL</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.5rem;">
+                    <div>
+                        <span style="color: #94a3b8; font-size: 0.8rem;">Registros iniciales</span>
+                        <div id="etl-registros-iniciales" style="font-size: 1.2rem; font-weight: bold; color: #f8fafc;">---</div>
+                    </div>
+                    <div>
+                        <span style="color: #94a3b8; font-size: 0.8rem;">Registros finales</span>
+                        <div id="etl-registros-finales" style="font-size: 1.2rem; font-weight: bold; color: #f8fafc;">---</div>
+                    </div>
+                    <div>
+                        <span style="color: #94a3b8; font-size: 0.8rem;">Tamaño CSV</span>
+                        <div id="etl-tamano-csv" style="font-size: 1.2rem; font-weight: bold; color: #f87171;">---</div>
+                    </div>
+                    <div>
+                        <span style="color: #94a3b8; font-size: 0.8rem;">Tamaño Parquet</span>
+                        <div id="etl-tamano-parquet" style="font-size: 1.2rem; font-weight: bold; color: #34d399;">---</div>
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <span style="color: #94a3b8; font-size: 0.8rem;">Reducción de almacenamiento</span>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div id="etl-reduccion" style="font-size: 1.4rem; font-weight: bold; color: #fbbf24;">---</div>
+                            <!-- Barra visual -->
+                            <div style="flex: 1; background: #334155; border-radius: 6px; height: 10px; overflow: hidden;">
+                                <div id="etl-reduccion-barra" style="height: 100%; background: #34d399; width: 0%; border-radius: 6px; transition: width 0.5s;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <span style="color: #94a3b8; font-size: 0.8rem;">Tiempo de ETL</span>
+                        <div id="etl-tiempo" style="font-size: 1.2rem; font-weight: bold; color: #f8fafc;">---</div>
+                    </div>
                 </div>
-                <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.5rem;">
-                    Correlación entre variables cinemáticas: velocidad, altitud y tasa vertical.
-                </p>
             </div>
+        </div>
 
+        <!-- Nota de archivos -->
+        <div style="margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid #334155; display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 0.8rem; color: #94a3b8;">
+            <span>📄 CSV: <span id="pipeline-csv-nombre">---</span></span>
+            <span>📦 Parquet: <span id="pipeline-parquet-nombre">---</span></span>
         </div>
     </section>
 
