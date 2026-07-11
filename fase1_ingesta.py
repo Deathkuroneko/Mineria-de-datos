@@ -20,7 +20,7 @@ COLUMNAS = [
     "last_contact", "longitude", "latitude", "baro_altitude", 
     "on_ground", "velocity", "true_track", "vertical_rate", 
     "sensors", "geo_altitude", "squawk", "spi", "position_source",
-    "fecha_captura_sistema" # Columna extra fundamental para minería temporal
+    "fecha_captura_sistema"
 ]
 
 class TokenManager:
@@ -65,7 +65,6 @@ class TokenManager:
 
 
 def inicializar_archivo_csv():
-    """Crea el archivo CSV con sus columnas si no existe en el disco."""
     if not os.path.exists(CSV_OUTPUT):
         with open(CSV_OUTPUT, mode='w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
@@ -74,91 +73,94 @@ def inicializar_archivo_csv():
     else:
         print(f"📂 El archivo '{CSV_OUTPUT}' ya existe. Los nuevos datos se anexarán al final.")
 
-
 def guardar_lote_en_csv(vectores_aviones):
-    """Anexa el lote de datos directamente al CSV en disco para proteger la RAM."""
     timestamp_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
     with open(CSV_OUTPUT, mode='a', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         for avion in vectores_aviones:
-            # Asegurar que el vector tenga longitud estándar (17 campos) por si vienen nulos al final
             if len(avion) < 17:
                 avion = list(avion) + [None] * (17 - len(avion))
-            
-            # Construimos la fila final combinando los datos de la API y el tiempo de captura
             fila_final = list(avion[:17]) + [timestamp_actual]
             writer.writerow(fila_final)
-
-
-# --- SISTEMA CENTRAL DE INGESTA DE DATOS ---
 
 session_api = requests.Session()
 retries_api = Retry(total=3, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
 session_api.mount('https://', HTTPAdapter(max_retries=retries_api))
-
 tokens = TokenManager()
 
 def ejecutar_recoleccion_masiva(intervalo_segundos=35, horas_ejecucion=4):
     """
     Ejecuta capturas cíclicas escribiendo en disco.
-    Cada consulta mundial descarga entre 12,000 y 15,000 filas.
+    Retorna un diccionario con métricas de la recolección.
     """
     inicializar_archivo_csv()
     
-    # Calcular ciclos totales en base al tiempo que desees correr el script
     ciclos_totales = int((horas_ejecucion * 3600) / intervalo_segundos)
     total_registros_guardados = 0
+    ciclos_ejecutados = 0
+    t_inicio_general = time.time()
     
     print(f"\n🚀 Iniciando tubería de recolección masiva por {horas_ejecucion} horas.")
     print("Presiona Ctrl+C en cualquier momento para detener el script de forma segura.\n")
     print("-" * 80)
 
-    for ciclo in range(1, ciclos_totales + 1):
-        t_inicio = time.time()
-        hora_log = datetime.now().strftime("%H:%M:%S")
-        
-        try:
-            response = session_api.get(
-                "https://opensky-network.org/api/states/all",
-                headers=tokens.headers(),
-                timeout=30
-            )
-            response.raise_for_status()
-            datos_json = response.json()
-            
-            if 'states' in datos_json and datos_json['states'] is not None:
-                vectores_aviones = datos_json['states']
-                num_aviones = len(vectores_aviones)
-                
-                # Guardado inmediato en el disco duro
-                guardar_lote_en_csv(vectores_aviones)
-                total_registros_guardados += num_aviones
-                
-                print(f"[{hora_log}] Lote {ciclo}/{ciclos_totales} -> Guardados {num_aviones} registros. (Total acumulado: {total_registros_guardados:,})")
-            else:
-                print(f"[{hora_log}] Lote {ciclo} -> Respuesta de la API vacía. Reintentando en el próximo ciclo.")
-                
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 429:
-                print(f"⚠️ [{hora_log}] Lote {ciclo} -> Límite de tasa excedido (429). Esperando un minuto extra...")
-                time.sleep(60)
-            else:
-                print(f"❌ [{hora_log}] Lote {ciclo} -> Error HTTP ({e.response.status_code})")
-        except Exception as e:
-            print(f"❌ [{hora_log}] Lote {ciclo} -> Error imprevisto: {e}")
-            
-        # Control dinámico del tiempo de espera (descontando el tiempo que demoró la red)
-        duracion_peticion = time.time() - t_inicio
-        tiempo_espera_real = max(1, intervalo_segundos - duracion_peticion)
-        time.sleep(tiempo_espera_real)
-
-
-# --- PUNTO DE ENTRADA ---
-if __name__ == "__main__":
     try:
-        # Configurado por defecto para ejecutarse por 4 horas seguidas. 
-        # Modifica 'horas_ejecucion' al tiempo que consideres necesario para tu dataset.
-        ejecutar_recoleccion_masiva(intervalo_segundos=35, horas_ejecucion=4)
+        for ciclo in range(1, ciclos_totales + 1):
+            t_inicio = time.time()
+            hora_log = datetime.now().strftime("%H:%M:%S")
+            
+            try:
+                response = session_api.get(
+                    "https://opensky-network.org/api/states/all",
+                    headers=tokens.headers(),
+                    timeout=30
+                )
+                response.raise_for_status()
+                datos_json = response.json()
+                
+                if 'states' in datos_json and datos_json['states'] is not None:
+                    vectores_aviones = datos_json['states']
+                    num_aviones = len(vectores_aviones)
+                    guardar_lote_en_csv(vectores_aviones)
+                    total_registros_guardados += num_aviones
+                    ciclos_ejecutados += 1
+                    print(f"[{hora_log}] Lote {ciclo}/{ciclos_totales} -> Guardados {num_aviones} registros. (Total acumulado: {total_registros_guardados:,})")
+                else:
+                    print(f"[{hora_log}] Lote {ciclo} -> Respuesta de la API vacía.")
+                    
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 429:
+                    print(f"⚠️ [{hora_log}] Lote {ciclo} -> Límite de tasa excedido (429). Esperando un minuto extra...")
+                    time.sleep(60)
+                else:
+                    print(f"❌ [{hora_log}] Lote {ciclo} -> Error HTTP ({e.response.status_code})")
+            except Exception as e:
+                print(f"❌ [{hora_log}] Lote {ciclo} -> Error imprevisto: {e}")
+                
+            duracion_peticion = time.time() - t_inicio
+            tiempo_espera_real = max(1, intervalo_segundos - duracion_peticion)
+            time.sleep(tiempo_espera_real)
+
     except KeyboardInterrupt:
-        print("\n🛑 Proceso detenido manualmente. El archivo CSV ha sido cerrado correctamente y tus datos están a salvo.")
+        print("\n🛑 Recolección interrumpida manualmente. Guardando datos acumulados...")
+        # No relanzamos la excepción, simplemente salimos del bucle
+
+    tiempo_total = time.time() - t_inicio_general
+    print(f"\n📊 Resumen de ingesta: {ciclos_ejecutados} ciclos ejecutados, {total_registros_guardados:,} registros guardados.")
+    print(f"⏱️ Tiempo de ejecución: {tiempo_total/60:.2f} minutos")
+
+    return {
+        "total_registros": total_registros_guardados,
+        "ciclos_ejecutados": ciclos_ejecutados,
+        "ciclos_totales": ciclos_totales,
+        "tiempo_ejecucion_segundos": round(tiempo_total, 2),
+        "archivo_csv": CSV_OUTPUT
+    }
+
+if __name__ == "__main__":
+    # Ejecución independiente (no desde pipeline)
+    try:
+        resultado = ejecutar_recoleccion_masiva(intervalo_segundos=35, horas_ejecucion=4)
+        print("\n✅ Ingesta finalizada correctamente.")
+    except KeyboardInterrupt:
+        print("\n🛑 Proceso detenido manualmente. El archivo CSV está a salvo.")

@@ -1,0 +1,34 @@
+# ======================================================================
+# 📁 1. ENTORNOS VIRTUALES Y DEPENDENCIAS LOCALES
+# ======================================================================
+.venv/
+venv/
+ENV/
+env/
+
+# ======================================================================
+# 📊 2. DATASETS MASIVOS (Evita bloqueos de tamaño en GitHub)
+# ======================================================================
+*.csv
+*.xlsx
+*.parquet
+
+# Si necesitas subir algún parquet liviano de configuración o test, 
+# puedes descomentarlo removiendo el '#' de la línea de abajo:
+# !opensky_estadisticas_globales.parquet
+
+# ======================================================================
+# ⚙️ 3. ARCHIVOS TEMPORALES DE PYTHON Y RENDIMIENTO
+# ======================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# ======================================================================
+# 🖥️ 4. CONFIGURACIONES DE EDITORES E IDEs (VS Code / Windows)
+# ======================================================================
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini

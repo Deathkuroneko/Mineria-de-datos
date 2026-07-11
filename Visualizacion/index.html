@@ -16,62 +16,128 @@
         <p>Minería No Supervisada en Tiempo Real (K-Means & Isolation Forest)</p>
     </header>
 
-    <main class="dashboard-grid">
-        <section class="card mapa-container">
+    <!-- ======================== MAPA ======================== -->
+    <!-- En lugar de tener el mapa suelto, mételo dentro de un contenedor que ocupe todo el ancho -->
+    <div class="dashboard-grid" style="padding-bottom: 0;">
+        <section class="card mapa-container" style="grid-column: 1 / -1; margin: 0;">
             <h2>🌍 Monitoreo de Espacio Aéreo Internacional</h2>
             <div id="mapa"></div>
         </section>
+    </div>
 
-        <section class="card">
-            <h2>🤖 Distribución Kinetic-Clusters (K-Means)</h2>
-            <canvas id="chartKmeans"></canvas>
+    <!-- ======================== MÉTRICAS RÁPIDAS ======================== -->
+    <div class="dashboard-grid" style="margin-top: 0; padding-top: 0;">
+        <!-- Estadísticas del lote actual -->
+        <section class="card" style="grid-column: span 1;">
+            <h2>📋 Estadísticas del Lote Actual</h2>
+            <div id="tabla-estadisticas" style="overflow-x: auto;">
+                <p style="color: #94a3b8;">Cargando estadísticas...</p>
+            </div>
         </section>
 
+        <!-- Total de aviones activos (nuevo) -->
+        <!-- Anomalías -->
         <section class="card">
-            <h2>⚠️ Alertas de Seguridad (Anomalías Detectadas)</h2>
+            <h2>⚠️ Alertas de Seguridad</h2>
             <div id="contador-anomalias" class="metric-bad">0</div>
             <p>Vuelos fuera de los límites operacionales normales.</p>
+            <h2>✈️ Aviones Activos</h2>
+            <div id="total-aviones" class="metric-bad" style="color: #38bdf8;">0</div>
+            <p>Aeronaves detectadas en el lote actual.</p>
         </section>
+    </div>
 
-        <section class="card">
-            <h2>📊 Validación de Clustering: Coeficiente de Silueta</h2>
-            <div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap;">
-                <div style="font-size: 2.5rem; font-weight: bold;" id="silhouette-mean">---</div>
-                <div style="font-size: 1rem; color: #94a3b8;">(K=3, lote actual)</div>
-            </div>
-            <div style="margin-top: 10px; font-size: 0.9rem; color: #cbd5e1;" id="silhouette-per-cluster">
-                Cargando...
-            </div>
-            <p style="margin-top: 10px; font-size: 0.85rem; color: #94a3b8;">
-                El coeficiente de silueta mide qué tan separados están los clústeres. 
-                Valores cercanos a 1 indican buena separación.
-            </p>
-        </section>
-    </main>
-
-    <h2 class="seccion-titulo">🧠 Sustento Técnico y Optimización Algorítmica</h2>
-    
+    <!-- ======================== EVOLUCIÓN TEMPORAL ======================== -->
+    <h2 class="seccion-titulo">📈 Evolución Temporal del Tráfico Aéreo</h2>
     <section class="metodologia-grid">
-        
-        <div class="card">
-            <h2>📊 Optimización de Parámetros: Método del Codo</h2>
-            <div class="contenedor-grafico">
-                <div id="codo-optimo" style="color: #a855f7; font-weight: bold; margin-top: 10px; text-align: center;">K óptimo calculando...</div>
-                <canvas id="chartCodo"></canvas>
+        <div class="card" style="grid-column: span 2;">
+            <h2>Línea de tiempo (lotes históricos)</h2>
+            <div class="contenedor-grafico" style="height: 300px;">
+                <canvas id="chartEvolucion"></canvas>
             </div>
         </div>
-
-        <div class="card card-flex">
-            <h2>🌲 Dendrograma Jerárquico (muestra dinámica por lote)</h2>
-            <div class="contenedor-imagen">
-                <img id="dendrograma-img" src="" alt="Cargando dendrograma..." style="max-width:100%;">
-            </div>
-        </div>
-
     </section>
 
+    <!-- ======================== SUSTENTO TÉCNICO ======================== -->
+    <h2 class="seccion-titulo">🧠 Sustento Técnico y Optimización Algorítmica</h2>
+    
+    <!-- Grid principal de 2 columnas -->
+    <section class="metodologia-grid" style="grid-template-columns: 1fr 1fr;">
+
+        <!-- ==================== COLUMNA IZQUIERDA ==================== -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+            <!-- Distribución de Clústeres -->
+            <div class="card">
+                <h2>🤖 Distribución Kinetic-Clusters (K-Means)</h2>
+                <canvas id="chartKmeans"></canvas>
+            </div>
+
+            <!-- Coeficiente de Silueta -->
+            <div class="card">
+                <h2>📊 Validación de Clustering: Coeficiente de Silueta</h2>
+                <div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap;">
+                    <div style="font-size: 2.5rem; font-weight: bold;" id="silhouette-mean">---</div>
+                    <div style="font-size: 1rem; color: #94a3b8;">(K=3, lote actual)</div>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.9rem; color: #cbd5e1;" id="silhouette-per-cluster">
+                    Cargando...
+                </div>
+                <p style="margin-top: 10px; font-size: 0.85rem; color: #94a3b8;">
+                    El coeficiente de silueta mide qué tan separados están los clústeres. 
+                    Valores cercanos a 1 indican buena separación.
+                </p>
+            </div>
+
+            <!-- Método del Codo -->
+            <div class="card">
+                <h2>📊 Optimización de Parámetros: Método del Codo</h2>
+                <div class="contenedor-grafico">
+                    <div id="codo-optimo" style="color: #a855f7; font-weight: bold; margin-top: 10px; text-align: center;">K óptimo calculando...</div>
+                    <canvas id="chartCodo"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ==================== COLUMNA DERECHA ==================== -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+            <!-- Diagrama de Dispersión -->
+            <div class="card">
+                <h2>📊 Análisis Cinemático: Velocidad vs Altitud</h2>
+                <div class="contenedor-grafico" style="height: 350px;">
+                    <canvas id="chartScatter"></canvas>
+                </div>
+                <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.5rem;">
+                    Cada punto es una aeronave. Los colores corresponden al clúster asignado (K-Means).
+                </p>
+            </div>
+
+            <!-- Dendrograma -->
+            <div class="card card-flex">
+                <h2>🌲 Dendrograma Jerárquico (muestra dinámica por lote)</h2>
+                <div class="contenedor-imagen">
+                    <img id="dendrograma-img" src="" alt="Cargando dendrograma..." style="max-width:100%; height:auto;">
+                </div>
+            </div>
+
+            <!-- Mapa de Calor -->
+            <div class="card card-flex">
+                <h2>📊 Análisis de Correlaciones</h2>
+                <div class="contenedor-imagen">
+                    <img id="mapa-calor-img" src="" alt="Mapa de calor cargando..." style="max-width:100%; height:auto;">
+                </div>
+                <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.5rem;">
+                    Correlación entre variables cinemáticas: velocidad, altitud y tasa vertical.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ======================== SCRIPTS ======================== -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

@@ -13,6 +13,14 @@ let baseDeDatosCompleta = [];
 let listaFechasUnicas = [];
 let indiceCronogramaActual = 0;
 let ultimoLoteSilhouette = null;
+let ultimoLoteScatter = null;
+let ultimoLoteEstadisticas = null;
+let datosEvolucionCompleta = [];
+const VENTANA_LOTES = 6;
+let ultimoLoteMapaCalor = null;
+
+// 🔥 OPTIMIZACIÓN 1: Map para acceso rápido por fecha
+let baseDatosPorFecha = new Map();
 
 // Registrar el plugin de anotación (después de cargar Chart.js y el plugin)
 if (typeof ChartAnnotation !== 'undefined') {
@@ -69,7 +77,7 @@ const graficoCodo = new Chart(ctxCodo, {
                         type: 'line',
                         mode: 'vertical',
                         scaleID: 'x',
-                        value: null,  // se actualizará dinámicamente
+                        value: null,
                         borderColor: '#ef4444',
                         borderWidth: 2,
                         borderDash: [5, 5],
@@ -99,7 +107,122 @@ const graficoCodo = new Chart(ctxCodo, {
             }
         }
     }
-    // ⚠️ ELIMINAR: plugins: [ChartAnnotation]  <--- Ya no es necesario
+});
+
+// Gráfico C: Scatter Velocidad vs Altitud
+const ctxScatter = document.getElementById('chartScatter').getContext('2d');
+const graficoScatter = new Chart(ctxScatter, {
+    type: 'scatter',
+    data: {
+        datasets: [
+            {
+                label: 'Clúster 0 (Tierra/Rodaje)',
+                data: [],
+                backgroundColor: '#38bdf8',
+                pointRadius: 3,
+            },
+            {
+                label: 'Clúster 1 (Crucero)',
+                data: [],
+                backgroundColor: '#a855f7',
+                pointRadius: 3,
+            },
+            {
+                label: 'Clúster 2 (Ascenso/Descenso)',
+                data: [],
+                backgroundColor: '#eab308',
+                pointRadius: 3,
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { labels: { color: '#f8fafc' } },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const raw = context.raw;
+                        return `Vel: ${raw.x.toFixed(0)} km/h, Alt: ${raw.y.toFixed(0)} m`;
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                type: 'linear',
+                position: 'bottom',
+                ticks: { color: '#94a3b8' },
+                grid: { color: '#334155' },
+                title: { display: true, text: 'Velocidad (km/h)', color: '#f8fafc' }
+            },
+            y: {
+                ticks: { color: '#94a3b8' },
+                grid: { color: '#334155' },
+                title: { display: true, text: 'Altitud Barométrica (m)', color: '#f8fafc' }
+            }
+        }
+    }
+});
+
+// Gráfico D: Evolución Temporal
+const ctxEvolucion = document.getElementById('chartEvolucion').getContext('2d');
+const graficoEvolucion = new Chart(ctxEvolucion, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [
+            {
+                label: 'Total aviones',
+                data: [],
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                tension: 0.3,
+                pointRadius: 3,
+                yAxisID: 'y',
+            },
+            {
+                label: 'Anomalías',
+                data: [],
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                tension: 0.3,
+                pointRadius: 3,
+                yAxisID: 'y1',
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { labels: { color: '#f8fafc' } }
+        },
+        scales: {
+            x: {
+                ticks: { color: '#94a3b8', maxTicksLimit: 10 },
+                grid: { color: '#334155' },
+                title: { display: true, text: 'Lote (fecha/hora)', color: '#f8fafc' }
+            },
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                ticks: { color: '#94a3b8' },
+                grid: { color: '#334155' },
+                title: { display: true, text: 'Aviones', color: '#f8fafc' }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                ticks: { color: '#94a3b8' },
+                grid: { drawOnChartArea: false },
+                title: { display: true, text: 'Anomalías', color: '#f8fafc' }
+            }
+        }
+    }
 });
 
 // ======================================================================
@@ -121,23 +244,20 @@ async function cargarMetodoCodoDinamico() {
         const k_values = data.k;
         const wcss_values = data.wcss;
         
-        // Actualizar datos del gráfico
         graficoCodo.data.labels = k_values;
         graficoCodo.data.datasets[0].data = wcss_values;
         graficoCodo.update();
         
-        // Calcular el punto de codo (método de máxima distancia)
         if (k_values && k_values.length >= 3) {
             const x1 = k_values[0];
             const y1 = wcss_values[0];
             const x2 = k_values[k_values.length - 1];
             const y2 = wcss_values[wcss_values.length - 1];
             let maxDist = -1;
-            let codoK = k_values[1]; // valor por defecto
+            let codoK = k_values[1];
             for (let i = 1; i < k_values.length - 1; i++) {
                 const x0 = k_values[i];
                 const y0 = wcss_values[i];
-                // Distancia perpendicular desde el punto (x0,y0) a la línea (x1,y1)-(x2,y2)
                 const numer = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
                 const denom = Math.sqrt((y2 - y1) ** 2 + (x2 - x1) ** 2);
                 const dist = numer / denom;
@@ -146,16 +266,13 @@ async function cargarMetodoCodoDinamico() {
                     codoK = x0;
                 }
             }
-            // Mostrar K óptimo en el DOM
             const codoElement = document.getElementById('codo-optimo');
             if (codoElement) {
                 codoElement.innerText = `K óptimo estimado: ${codoK}`;
             }
-            
-            // ✅ ACTUALIZAR LA ANOTACIÓN CON EL VALOR DE codoK
             if (graficoCodo.options.plugins && graficoCodo.options.plugins.annotation) {
                 graficoCodo.options.plugins.annotation.annotations.codoLine.value = codoK;
-                graficoCodo.update(); // <--- necesario para reflejar el cambio
+                graficoCodo.update();
                 console.log("Datos del codo recibidos:", k_values, wcss_values);
             }
         }
@@ -164,10 +281,44 @@ async function cargarMetodoCodoDinamico() {
     }
 }
 
+async function actualizarScatter(fechaLote) {
+    try {
+        if (ultimoLoteScatter === fechaLote) return;
+        console.log(`Solicitando scatter para lote: ${fechaLote}`);
+        const url = `http://127.0.0.1:8000/api/scatter-lote?fecha_lote=${encodeURIComponent(fechaLote)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.error) {
+            console.error("Error scatter:", data.error);
+            return;
+        }
+
+        const clusters = [[], [], []];
+        data.registros.forEach(row => {
+            const cluster = row.cluster_vuelo;
+            if (cluster !== undefined && cluster !== null && cluster >= 0 && cluster < 3) {
+                clusters[cluster].push({
+                    x: row.velocity_kmh,
+                    y: row.baro_altitude
+                });
+            }
+        });
+
+        graficoScatter.data.datasets.forEach((dataset, index) => {
+            dataset.data = clusters[index] || [];
+        });
+        graficoScatter.update();
+
+        ultimoLoteScatter = fechaLote;
+        console.log(`Scatter actualizado para lote: ${fechaLote} (${data.total} registros)`);
+    } catch (error) {
+        console.error("Error cargando scatter:", error);
+    }
+}
+
 // Carga el dendrograma para un lote dado por su fecha
 async function cargarDendrogramaLote(fechaLote) {
     try {
-        // Si no se pasa fecha, se usará el último lote automáticamente (backend)
         let url = 'http://127.0.0.1:8000/api/dendrograma-lote?';
         if (fechaLote) {
             url += `fecha_lote=${encodeURIComponent(fechaLote)}&`;
@@ -183,7 +334,6 @@ async function cargarDendrogramaLote(fechaLote) {
             return;
         }
         
-        // Actualizar la imagen en el contenedor
         const imgElement = document.getElementById('dendrograma-img');
         if (imgElement) {
             imgElement.src = `data:image/png;base64,${data.imagen}`;
@@ -198,9 +348,9 @@ async function cargarDendrogramaLote(fechaLote) {
 // cargar de parametro Silhouette
 async function cargarSilhouette(fechaLote, k = 3) {
     try {
-        if (ultimoLoteSilhouette === fechaLote) return; // Evita duplicados
-        console.log(`Solicitando silueta para lote: ${fechaLote}`);
-        const url = `http://127.0.0.1:8000/api/silhouette?fecha_lote=${encodeURIComponent(fechaLote)}&k=${k}`;
+        if (ultimoLoteSilhouette === fechaLote) return;
+        console.log(`Solicitando silueta precalculada para lote: ${fechaLote}`);
+        const url = `http://127.0.0.1:8000/api/silhouette-precalc?fecha_lote=${encodeURIComponent(fechaLote)}`;
         const response = await fetch(url);
         const data = await response.json();
         if (data.error) {
@@ -208,20 +358,24 @@ async function cargarSilhouette(fechaLote, k = 3) {
             return;
         }
         
-        // Actualizar el DOM
+        // ✅ ACTUALIZAR EL DOM
         const silMeanElement = document.getElementById('silhouette-mean');
         if (silMeanElement) {
             silMeanElement.innerText = data.silhouette_mean.toFixed(3);
-            // Opcional: cambiar color según valor (verde > 0.7, naranja > 0.4, rojo < 0.4)
-            if (data.silhouette_mean > 0.7) silMeanElement.style.color = '#4ade80';
-            else if (data.silhouette_mean > 0.4) silMeanElement.style.color = '#facc15';
-            else silMeanElement.style.color = '#f87171';
+            // Cambiar color según valor
+            if (data.silhouette_mean > 0.7) {
+                silMeanElement.style.color = '#4ade80'; // verde
+            } else if (data.silhouette_mean > 0.4) {
+                silMeanElement.style.color = '#facc15'; // amarillo
+            } else {
+                silMeanElement.style.color = '#f87171'; // rojo
+            }
         }
         
-        // Mostrar silueta por clúster (opcional)
         const silPerClusterElement = document.getElementById('silhouette-per-cluster');
         if (silPerClusterElement) {
             let html = '';
+            // data.silhouette_per_cluster es un objeto { "0": 0.12, "1": 0.34, ... }
             for (const [cluster, value] of Object.entries(data.silhouette_per_cluster)) {
                 html += `<span style="margin-right: 15px;">Clúster ${cluster}: ${parseFloat(value).toFixed(3)}</span>`;
             }
@@ -232,6 +386,67 @@ async function cargarSilhouette(fechaLote, k = 3) {
         console.log(`Silueta actualizada para lote: ${fechaLote} (media: ${data.silhouette_mean.toFixed(3)})`);
     } catch (error) {
         console.error("Error cargando silueta:", error);
+    }
+}
+
+async function actualizarEstadisticas(fechaLote) {
+    try {
+        if (ultimoLoteEstadisticas === fechaLote) return;
+        console.log(`Solicitando estadísticas para lote: ${fechaLote}`);
+        const url = `http://127.0.0.1:8000/api/estadisticas-lote?fecha_lote=${encodeURIComponent(fechaLote)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.error) {
+            console.error("Error estadísticas:", data.error);
+            document.getElementById('tabla-estadisticas').innerHTML = `<p style="color: #ef4444;">Error: ${data.error}</p>`;
+            return;
+        }
+
+        const html = `
+            <table style="width:100%; color:#f8fafc; border-collapse: collapse; font-size:0.9rem;">
+                <tr>
+                    <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #334155;">Métrica</th>
+                    <th style="text-align:right; padding:6px 8px; border-bottom:1px solid #334155;">Valor</th>
+                </tr>
+                <tr><td style="padding:4px 8px;">✈️ Total aeronaves (únicas)</td><td style="text-align:right; padding:4px 8px;">${data.total_aviones}</td></tr>
+                <tr><td style="padding:4px 8px;">⚠️ Anomalías</td><td style="text-align:right; padding:4px 8px;">${data.anomalias} (${data.porcentaje_anomalias}%)</td></tr>
+                <tr><td style="padding:4px 8px;">🚀 Velocidad media ± std</td><td style="text-align:right; padding:4px 8px;">${data.velocidad.media} ± ${data.velocidad.std} km/h</td></tr>
+                <tr><td style="padding:4px 8px;">⛰️ Altitud media ± std</td><td style="text-align:right; padding:4px 8px;">${data.altitud.media} ± ${data.altitud.std} m</td></tr>
+                <tr><td style="padding:4px 8px;">📈 Tasa vertical media ± std</td><td style="text-align:right; padding:4px 8px;">${data.tasa_vertical.media} ± ${data.tasa_vertical.std} m/s</td></tr>
+                <tr><td style="padding:4px 8px;">🌍 Top países</td><td style="text-align:right; padding:4px 8px;">${Object.entries(data.top_paises).map(([pais, count]) => `${pais} (${count})`).join(', ')}</td></tr>
+                <tr><td style="padding:4px 8px;">📊 Distribución clústeres</td><td style="text-align:right; padding:4px 8px;">${Object.entries(data.cluster_distribucion).map(([k, v]) => `C${k}: ${v}`).join(' | ')}</td></tr>
+                <tr><td style="padding:4px 8px;">🛬 En tierra</td><td style="text-align:right; padding:4px 8px;">${data.en_tierra}</td></tr>
+                <tr><td style="padding:4px 8px;">📅 Fecha lote</td><td style="text-align:right; padding:4px 8px;">${data.fecha_lote}</td></tr>
+            </table>
+        `;
+        document.getElementById('tabla-estadisticas').innerHTML = html;
+        ultimoLoteEstadisticas = fechaLote;
+        console.log(`Estadísticas actualizadas para lote: ${fechaLote}`);
+    } catch (error) {
+        console.error("Error cargando estadísticas:", error);
+        document.getElementById('tabla-estadisticas').innerHTML = `<p style="color: #ef4444;">Error al cargar estadísticas.</p>`;
+    }
+}
+
+async function cargarMapaCalor(fechaLote) {
+    try {
+        if (ultimoLoteMapaCalor === fechaLote) return;
+        console.log(`Solicitando mapa de calor para lote: ${fechaLote}`);
+        const url = `http://127.0.0.1:8000/api/mapa-calor?fecha_lote=${encodeURIComponent(fechaLote)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.error) {
+            console.error("Error mapa de calor:", data.error);
+            return;
+        }
+        const imgElement = document.getElementById('mapa-calor-img');
+        if (imgElement) {
+            imgElement.src = `data:image/png;base64,${data.imagen}`;
+            ultimoLoteMapaCalor = fechaLote;
+            console.log(`Mapa de calor actualizado para lote: ${fechaLote}`);
+        }
+    } catch (error) {
+        console.error("Error cargando mapa de calor:", error);
     }
 }
 
@@ -247,19 +462,46 @@ async function inicializarSimulador() {
             return;
         }
 
-        // Agrupar marcas de tiempo únicas del sistema y ordenarlas cronológicamente
+        // 🔥 OPTIMIZACIÓN 2: Agrupar por fecha
+        baseDatosPorFecha = new Map();
+        baseDeDatosCompleta.forEach(record => {
+            const date = record.fecha_captura_sistema;
+            if (!baseDatosPorFecha.has(date)) {
+                baseDatosPorFecha.set(date, []);
+            }
+            baseDatosPorFecha.get(date).push(record);
+        });
+
+        // Obtener fechas únicas
         const fechasSet = new Set(baseDeDatosCompleta.map(v => v.fecha_captura_sistema).filter(f => f !== null && f !== undefined));
         listaFechasUnicas = Array.from(fechasSet).sort();
         
         console.log(`Dataset cargado: ${baseDeDatosCompleta.length} registros.`);
-        console.log(`Se detectaron ${listaFechasUnicas.length} lotes de tiempo del sistema únicos.`);
+        console.log(`Se detectaron ${listaFechasUnicas.length} lotes.`);
         console.log(`Inicio: ${listaFechasUnicas[0]} -> Fin: ${listaFechasUnicas[listaFechasUnicas.length - 1]}`);
 
-        // Ejecuciones iniciales e inicio del temporizador reactivo
+        // 🔥 OPTIMIZACIÓN 3: Calcular evolución usando el Map
+        datosEvolucionCompleta = listaFechasUnicas.map(fecha => {
+            const aviones = baseDatosPorFecha.get(fecha) || [];
+            const total = aviones.length;
+            const anomalias = aviones.filter(a => a.es_anomalia === true).length;
+            const velocidades = aviones.map(a => a.velocity_kmh).filter(v => v != null);
+            const velMedia = velocidades.length ? velocidades.reduce((a,b) => a+b, 0) / velocidades.length : 0;
+            return { fecha, total, anomalias, velMedia };
+        });
+
+        // Inicializar gráfico de evolución vacío
+        graficoEvolucion.data.labels = [];
+        graficoEvolucion.data.datasets[0].data = [];
+        graficoEvolucion.data.datasets[1].data = [];
+        graficoEvolucion.update();
+
+        // 🔥 OPTIMIZACIÓN 4: Cargar mapa de calor estático una sola vez con el primer lote
         if (listaFechasUnicas.length > 0) {
+            cargarMapaCalor(listaFechasUnicas[0]);
             ejecutarPasoSimulacion();
-            cargarMetodoCodoDinamico(); // Se ejecuta solo UNA VEZ de fondo
-            setInterval(ejecutarPasoSimulacion, 5000); 
+            cargarMetodoCodoDinamico();
+            setInterval(ejecutarPasoSimulacion, 5000);
         }
 
     } catch (error) {
@@ -271,17 +513,40 @@ async function inicializarSimulador() {
 // 4. MOTOR DE LA SIMULACIÓN TEMPORAL (ITERADOR)
 // ======================================================================
 function ejecutarPasoSimulacion() {
-    // ... (sin cambios, igual que antes)
+    // 🔥 OPTIMIZACIÓN 5: Eliminar 'return' para que no deje el gráfico en blanco
     if (indiceCronogramaActual >= listaFechasUnicas.length) {
         console.log("Fin de la línea de tiempo alcanzada. Reiniciando simulación...");
         indiceCronogramaActual = 0;
+        // Continuar para procesar el primer lote
     }
 
     const fechaLoteActual = listaFechasUnicas[indiceCronogramaActual];
-    const avionesDelLote = baseDeDatosCompleta.filter(v => v.fecha_captura_sistema === fechaLoteActual);
+    // 🔥 OPTIMIZACIÓN 6: Usar el Map en lugar de filter
+    const avionesDelLote = baseDatosPorFecha.get(fechaLoteActual) || [];
 
-    cargarSilhouette(fechaLoteActual, 3); // K=3 fijo
+    // Cargar métricas para el lote actual (sin mapa de calor)
+    cargarSilhouette(fechaLoteActual, 3);
     cargarDendrogramaLote(fechaLoteActual);
+    actualizarScatter(fechaLoteActual);
+    actualizarEstadisticas(fechaLoteActual);
+    // 🔥 OPTIMIZACIÓN 7: Eliminada la llamada a cargarMapaCalor
+
+    // ===== ACTUALIZAR GRÁFICO DE EVOLUCIÓN (con los datos hasta el lote actual) =====
+    const inicio = Math.max(0, indiceCronogramaActual - VENTANA_LOTES + 1);
+    const fin = indiceCronogramaActual + 1;
+    const puntosAMostrar = datosEvolucionCompleta.slice(inicio, fin);
+
+    if (puntosAMostrar.length > 0) {
+        graficoEvolucion.data.labels = puntosAMostrar.map(d => new Date(d.fecha).toLocaleTimeString());
+        graficoEvolucion.data.datasets[0].data = puntosAMostrar.map(d => d.total);
+        graficoEvolucion.data.datasets[1].data = puntosAMostrar.map(d => d.anomalias);
+    } else {
+        graficoEvolucion.data.labels = [];
+        graficoEvolucion.data.datasets[0].data = [];
+        graficoEvolucion.data.datasets[1].data = [];
+    }
+    graficoEvolucion.update();
+
     // Filtrar duplicados por ICAO24 dentro del mismo lote
     const mapaAvionesUnicos = new Map();
     avionesDelLote.forEach(reg => {
@@ -337,16 +602,12 @@ function ejecutarPasoSimulacion() {
     graficoKMeans.data.datasets[0].data = conteoClusters;
     graficoKMeans.update();
     
-    const elementAnomalias = document.getElementById('contador-anomalias');
-    if (elementAnomalias) {
-        elementAnomalias.innerText = totalAnomalias;
-    }
+    document.getElementById('total-aviones').innerText = mapaAvionesUnicos.size;
+    document.getElementById('contador-anomalias').innerText = totalAnomalias;
 
     console.log(`[Simulador UCE] Lote: ${fechaLoteActual} | Aviones en pantalla: ${mapaAvionesUnicos.size}`);
     indiceCronogramaActual++;
 }
-
-
 
 // Inicializar el sistema completo
 inicializarSimulador();

@@ -119,3 +119,54 @@ header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
     object-fit: contain;
     border-radius: 4px;
 }
+
+/* 1. El mapa debe ocupar todo el ancho, pero dentro de un grid de 1 columna */
+.mapa-container {
+    grid-column: 1 / -1; /* Ocupa todas las columnas */
+    margin: 0 2rem 1.5rem 2rem; /* Ajusta márgenes para que no quede pegado al borde */
+}
+
+/* 2. Asegurar que el contenedor del mapa tenga altura suficiente */
+#mapa {
+    height: 450px;
+    width: 100%;
+    border-radius: 8px;
+    background: #111;
+}
+
+/* 3. Los contenedores de imágenes deben tener altura fija para evitar superposición */
+.contenedor-imagen {
+    background: rgba(15, 23, 42, 0.4);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 250px; /* ← ALTURA MÍNIMA FIJA */
+    max-height: 350px; /* ← ALTURA MÁXIMA PARA NO DESBORDAR */
+    overflow: hidden;  /* ← RECORTA EL EXCESO SI LO HAY */
+}
+
+.contenedor-imagen img {
+    max-width: 100%;
+    max-height: 100%; /* ← LA IMAGEN NO SUPERA EL CONTENEDOR */
+    height: auto;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+/* 4. Ajustar el grid de sustento técnico para que sea realmente de 2 columnas fijas */
+.metodologia-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* ← COLUMNAS FIJAS, NO AUTO-FIT */
+    gap: 1.5rem;
+    padding: 0 2rem 2rem 2rem;
+}
+
+/* 5. En pantallas pequeñas (menos de 900px), apilar a 1 columna */
+@media (max-width: 900px) {
+    .metodologia-grid {
+        grid-template-columns: 1fr;
+    }
+}
