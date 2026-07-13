@@ -16,8 +16,7 @@
         <p>Minería No Supervisada en Tiempo Real (K-Means & Isolation Forest)</p>
     </header>
 
-    <!-- ======================== MAPA ======================== -->
-    <!-- En lugar de tener el mapa suelto, mételo dentro de un contenedor que ocupe todo el ancho -->
+    <!-- Contenedor del Mapa Global -->
     <div class="dashboard-grid" style="padding-bottom: 0;">
         <section class="card mapa-container" style="grid-column: 1 / -1; margin: 0;">
             <h2>🌍 Monitoreo de Espacio Aéreo Internacional</h2>
@@ -25,7 +24,7 @@
         </section>
     </div>
 
-    <!-- ======================== EVOLUCIÓN TEMPORAL ======================== -->
+    <!-- Sección de Evolución Temporal -->
     <h2 class="seccion-titulo">📈 Evolución Temporal del Tráfico Aéreo</h2>
     <section class="metodologia-grid">
         <div class="card" style="grid-column: span 2;">
@@ -36,9 +35,9 @@
         </div>
     </section>
 
-    <!-- ======================== MÉTRICAS RÁPIDAS ======================== -->
+    <!-- Panel de Métricas Principales -->
     <div class="dashboard-grid" style="margin-top: 0; padding-top: 0;">
-        <!-- Estadísticas del lote actual -->
+        <!-- Resumen Estadístico del Lote -->
         <section class="card" style="grid-column: span 1;">
             <h2>📋 Estadísticas del Lote Actual</h2>
             <div id="tabla-estadisticas" style="overflow-x: auto;">
@@ -46,8 +45,7 @@
             </div>
         </section>
 
-        <!-- Total de aviones activos-->
-        <!-- Anomalías -->
+        <!-- Panel de Alertas y Aviones Activos -->
         <section class="card">
             <h2>⚠️ Alertas de Seguridad</h2>
             <div id="contador-anomalias" class="metric-bad">0</div>
@@ -61,7 +59,7 @@
     <h2 class="seccion-titulo">🧠 Sustento Técnico y Optimización Algorítmica</h2>
 
         <div class="dashboard-grid" style="margin-top: 0; padding-top: 0;">
-        <!-- Estadísticas del lote actual -->
+        <!-- Visualización de Clústeres (K-Means) -->
         <section class="card" style="grid-column: span 1;">
             <h2>🤖 Distribución Kinetic-Clusters (K-Means)</h2>
             <div class="contenedor-grafico" style="height: 300px;">
@@ -69,8 +67,7 @@
             </div>
         </section>
 
-        <!-- Total de aviones activos-->
-        <!-- Anomalías -->
+        <!-- Panel de Validación de Silueta -->
         <section class="card">
             <h2>📊 Validación de Clustering: Coeficiente de Silueta</h2>
             
@@ -107,7 +104,7 @@
 
 
     <section class="metodologia-grid">   
-            <!-- Diagrama de Dispersión -->
+            <!-- Gráfico de Dispersión Cinemático -->
             <div class="card" style="grid-column: span 2;">
                 <h2>📊 Análisis Cinemático: Velocidad vs Altitud</h2>
                 <div class="contenedor-grafico" style="height: 800px;">
@@ -141,7 +138,7 @@
     </section>
 
 
-    <!-- Estadísticas Globales -->
+    <!-- Contenedor de Estadísticas Globales -->
     <section class="card" style="grid-column: span 3;">
         <h2>📊 Estadísticas Globales del Dataset</h2>
         <div id="estadisticas-globales" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; text-align: center;">
@@ -183,13 +180,13 @@
         </div>
 
 
-                <!-- Distribución y Centroides integrados -->
+                <!-- Tarjetas de Perfiles de Vuelo -->
         <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
             <h3 style="color: #f8fafc; font-size: 1.1rem; margin-bottom: 0.8rem;">✈️ Perfiles de Vuelo (Centroides K-Means)</h3>
             
-            <!-- 🔥 CONTENEDOR DINÁMICO: se llenará con JavaScript -->
+            <!-- Contenedor para tarjetas generadas dinámicamente -->
             <div id="centroides-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                <!-- Las tarjetas se generarán automáticamente -->
+
             </div>
         </div>
 
@@ -199,11 +196,11 @@
     </section>
 
 
-    <!-- ======================== RESUMEN DEL PIPELINE ======================== -->
+    <!-- Panel de Resumen del Pipeline -->
     <section class="card" style="grid-column: span 3; margin-top: 1rem;">
         <h2>⚙️ Resumen del Pipeline de Datos</h2>
         
-        <!-- Estado y tiempos globales -->
+        <!-- Panel de Estado General del Pipeline -->
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; background: rgba(15, 23, 42, 0.4); padding: 0.8rem 1.2rem; border-radius: 8px; margin-bottom: 1.2rem; border: 1px solid #334155;">
             <div>
                 <span style="color: #94a3b8; font-size: 0.85rem;">Estado</span><br>
@@ -227,10 +224,10 @@
             </div>
         </div>
 
-        <!-- Grid de métricas -->
+        <!-- Desglose de Métricas Operativas -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
             
-            <!-- Bloque INGESTA -->
+            <!-- Métricas de Ingesta de Datos -->
             <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid #334155; border-radius: 8px; padding: 1rem;">
                 <h3 style="color: #38bdf8; margin: 0 0 0.8rem 0; font-size: 1rem;">📡 Fase de Ingesta</h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.5rem;">
@@ -253,7 +250,7 @@
                 </div>
             </div>
 
-            <!-- Bloque ETL -->
+            <!-- Métricas del Proceso ETL -->
             <div style="background: rgba(52, 211, 153, 0.05); border: 1px solid #334155; border-radius: 8px; padding: 1rem;">
                 <h3 style="color: #34d399; margin: 0 0 0.8rem 0; font-size: 1rem;">🔄 Fase ETL</h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1.5rem;">
@@ -277,7 +274,7 @@
                         <span style="color: #94a3b8; font-size: 0.8rem;">Reducción de almacenamiento</span>
                         <div style="display: flex; align-items: center; gap: 1rem;">
                             <div id="etl-reduccion" style="font-size: 1.4rem; font-weight: bold; color: #fbbf24;">---</div>
-                            <!-- Barra visual -->
+                            <!-- Indicador de Reducción -->
                             <div style="flex: 1; background: #334155; border-radius: 6px; height: 10px; overflow: hidden;">
                                 <div id="etl-reduccion-barra" style="height: 100%; background: #34d399; width: 0%; border-radius: 6px; transition: width 0.5s;"></div>
                             </div>
@@ -291,14 +288,14 @@
             </div>
         </div>
 
-        <!-- Nota de archivos -->
+        <!-- Referencias de Archivos Generados -->
         <div style="margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid #334155; display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 0.8rem; color: #94a3b8;">
             <span>📄 CSV: <span id="pipeline-csv-nombre">---</span></span>
             <span>📦 Parquet: <span id="pipeline-parquet-nombre">---</span></span>
         </div>
     </section>
 
-    <!-- ======================== SCRIPTS ======================== -->
+    <!-- Carga de Scripts del Sistema -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
 </body>

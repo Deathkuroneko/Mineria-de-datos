@@ -12,7 +12,6 @@ CLIENT_ID = "ekkd-api-client"
 CLIENT_SECRET = "0hxu5eVaza4rmdimK79qXdKbwzIwtUtH"
 TOKEN_REFRESH_MARGIN = 30
 
-# --- CONFIGURACIÓN DE ALMACENAMIENTO MASIVO ---
 CSV_OUTPUT = "opensky_datos_masivos.csv"
 
 COLUMNAS = [
@@ -24,6 +23,9 @@ COLUMNAS = [
 ]
 
 class TokenManager:
+    """
+    Gestiona la obtención y actualización del token de acceso para la API de OpenSky.
+    """
     def __init__(self):
         self.token = None
         self.expires_at = None
@@ -65,6 +67,9 @@ class TokenManager:
 
 
 def inicializar_archivo_csv():
+    """
+    Crea el archivo CSV de salida y escribe las cabeceras si este no existe.
+    """
     if not os.path.exists(CSV_OUTPUT):
         with open(CSV_OUTPUT, mode='w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
@@ -74,6 +79,9 @@ def inicializar_archivo_csv():
         print(f"📂 El archivo '{CSV_OUTPUT}' ya existe. Los nuevos datos se anexarán al final.")
 
 def guardar_lote_en_csv(vectores_aviones):
+    """
+    Añade un lote de registros de aviones al archivo CSV de salida.
+    """
     timestamp_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(CSV_OUTPUT, mode='a', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
@@ -90,8 +98,8 @@ tokens = TokenManager()
 
 def ejecutar_recoleccion_masiva(intervalo_segundos=35, horas_ejecucion=4):
     """
-    Ejecuta capturas cíclicas escribiendo en disco.
-    Retorna un diccionario con métricas de la recolección.
+    Ejecuta el proceso de recolección de datos de manera cíclica y almacena los resultados en disco.
+    Retorna un diccionario que contiene las métricas del proceso de recolección.
     """
     inicializar_archivo_csv()
     
@@ -143,7 +151,6 @@ def ejecutar_recoleccion_masiva(intervalo_segundos=35, horas_ejecucion=4):
 
     except KeyboardInterrupt:
         print("\n🛑 Recolección interrumpida manualmente. Guardando datos acumulados...")
-        # No relanzamos la excepción, simplemente salimos del bucle
 
     tiempo_total = time.time() - t_inicio_general
     print(f"\n📊 Resumen de ingesta: {ciclos_ejecutados} ciclos ejecutados, {total_registros_guardados:,} registros guardados.")
@@ -158,7 +165,6 @@ def ejecutar_recoleccion_masiva(intervalo_segundos=35, horas_ejecucion=4):
     }
 
 if __name__ == "__main__":
-    # Ejecución independiente (no desde pipeline)
     try:
         resultado = ejecutar_recoleccion_masiva(intervalo_segundos=35, horas_ejecucion=4)
         print("\n✅ Ingesta finalizada correctamente.")

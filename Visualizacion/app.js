@@ -1,6 +1,4 @@
-// ======================================================================
-// 1. INICIALIZAR EL MAPA GLOBAL
-// ======================================================================
+// Configuración inicial del mapa geográfico
 const mapa = L.map('mapa', {
     worldCopyJump: false,  // Evita que el mundo se repita al desplazarse
     maxBounds: L.latLngBounds([-90, -180], [90, 180]), // Limita al mundo real
@@ -13,7 +11,7 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
 
 let capaAviones = L.layerGroup().addTo(mapa);
 
-// Variables Globales de Simulación por Lotes del Sistema
+// Variables globales del sistema
 let baseDeDatosCompleta = [];
 let listaFechasUnicas = [];
 let indiceCronogramaActual = 0;
@@ -24,19 +22,15 @@ let datosEvolucionCompleta = [];
 const VENTANA_LOTES = 4;
 let ultimoLoteMapaCalor = null;
 
-// 🔥 OPTIMIZACIÓN 1: Map para acceso rápido por fecha
+// Estructura Map para acceso optimizado por fecha
 let baseDatosPorFecha = new Map();
 
-// Registrar el plugin de anotación (después de cargar Chart.js y el plugin)
+// Registro del plugin de anotación en Chart.js
 if (typeof ChartAnnotation !== 'undefined') {
     Chart.register(ChartAnnotation);
 }
 
-// ======================================================================
-// 2. INICIALIZAR LOS GRÁFICOS CON CHART.JS
-// ======================================================================
-
-// Gráfico A: Distribución de Clústeres (K-Means)
+// Configuración e inicialización de gráficos (Chart.js)
 const ctxKMeans = document.getElementById('chartKmeans').getContext('2d');
 const graficoKMeans = new Chart(ctxKMeans, {
     type: 'bar',
@@ -55,7 +49,7 @@ const graficoKMeans = new Chart(ctxKMeans, {
     }
 });
 
-// Gráfico B: Optimización Dinámica (Método del Codo)
+
 const ctxCodo = document.getElementById('chartCodo').getContext('2d');
 const graficoCodo = new Chart(ctxCodo, {
     type: 'line',
@@ -114,7 +108,7 @@ const graficoCodo = new Chart(ctxCodo, {
     }
 });
 
-// Gráfico C: Scatter Velocidad vs Altitud
+
 const ctxScatter = document.getElementById('chartScatter').getContext('2d');
 const graficoScatter = new Chart(ctxScatter, {
     type: 'scatter',
@@ -171,7 +165,7 @@ const graficoScatter = new Chart(ctxScatter, {
     }
 });
 
-// Gráfico D: Evolución Temporal
+
 const ctxEvolucion = document.getElementById('chartEvolucion').getContext('2d');
 const graficoEvolucion = new Chart(ctxEvolucion, {
     type: 'line',
@@ -230,11 +224,10 @@ const graficoEvolucion = new Chart(ctxEvolucion, {
     }
 });
 
-// ======================================================================
-// 3. FUNCIONES ASÍNCRONAS DE CARGA DE DATOS (FASTAPI)
-// ======================================================================
-
-// Consulta del Método del Codo Basado en el Último Lote de Captura
+/**
+ * Consulta el cálculo de la inercia (Método del Codo) al backend
+ * y actualiza el gráfico correspondiente.
+ */
 async function cargarMetodoCodoDinamico() {
     try {
         console.log("Solicitando cálculo optimizado del Método del Codo al Backend...");
@@ -286,6 +279,11 @@ async function cargarMetodoCodoDinamico() {
     }
 }
 
+/**
+ * Recupera los datos para el gráfico de dispersión de un lote específico
+ * y actualiza el gráfico.
+ * @param {string} fechaLote - Fecha del lote a consultar.
+ */
 async function actualizarScatter(fechaLote) {
     try {
         if (ultimoLoteScatter === fechaLote) return;
@@ -321,7 +319,9 @@ async function actualizarScatter(fechaLote) {
     }
 }
 
-// Cargar resultados de minería (centroides, anomalías, etc.)
+/**
+ * Recupera los resultados del proceso de minería de datos, actualizando las tarjetas de centroides y el porcentaje global de anomalías.
+ */
 async function cargarResultadosMineria() {
     try {
         const response = await fetch('http://127.0.0.1:8000/api/mineria-resultados');
@@ -410,13 +410,20 @@ async function cargarResultadosMineria() {
     }
 }
 
-// Función auxiliar para convertir hex a rgb
+/**
+ * Convierte un código de color hexadecimal a formato RGB.
+ * @param {string} hex - Código hexadecimal.
+ * @returns {string} Código RGB.
+ */
 function hexToRgb(hex) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255,255,255';
 }
 
-// Carga el dendrograma para un lote dado por su fecha
+/**
+ * Solicita el dendrograma correspondiente a una muestra del lote indicado.
+ * @param {string} fechaLote - Fecha del lote.
+ */
 async function cargarDendrogramaLote(fechaLote) {
     try {
         let url = 'http://127.0.0.1:8000/api/dendrograma-lote?';
@@ -445,7 +452,11 @@ async function cargarDendrogramaLote(fechaLote) {
     }
 }
 
-// cargar de parametro Silhouette
+/**
+ * Recupera y presenta en pantalla las métricas de silueta precalculadas para el lote indicado.
+ * @param {string} fechaLote - Fecha del lote.
+ * @param {number} [k=3] - Número de clústeres.
+ */
 async function cargarSilhouette(fechaLote, k = 3) {
     try {
         if (ultimoLoteSilhouette === fechaLote) return;
@@ -510,6 +521,10 @@ async function cargarSilhouette(fechaLote, k = 3) {
     }
 }
 
+/**
+ * Consulta las estadísticas agregadas para el lote especificado y actualiza la tabla en la interfaz gráfica.
+ * @param {string} fechaLote - Fecha del lote.
+ */
 async function actualizarEstadisticas(fechaLote) {
     try {
         if (ultimoLoteEstadisticas === fechaLote) return;
@@ -549,6 +564,9 @@ async function actualizarEstadisticas(fechaLote) {
     }
 }
 
+/**
+ * Carga el mapa de calor de correlación estático previamente calculado y lo renderiza en la interfaz.
+ */
 async function cargarMapaCalor() {
     try {
         if (ultimoLoteMapaCalor === 'estatico') return;
@@ -570,6 +588,9 @@ async function cargarMapaCalor() {
     }
 }
 
+/**
+ * Recupera y presenta las métricas operativas del pipeline global (tiempos de ejecución y procesamiento).
+ */
 async function cargarMetricasPipeline() {
     try {
         const response = await fetch('http://127.0.0.1:8000/api/pipeline-metrics');
@@ -627,6 +648,9 @@ async function cargarMetricasPipeline() {
     }
 }
 
+/**
+ * Carga los indicadores estadísticos globales del repositorio de datos completo y actualiza la interfaz.
+ */
 async function cargarEstadisticasGlobales() {
     try {
         const response = await fetch('http://127.0.0.1:8000/api/estadisticas-globales');
@@ -654,7 +678,9 @@ async function cargarEstadisticasGlobales() {
     }
 }
 
-// FUNCIÓN MAESTRA: Inicialización General del Simulador
+/**
+ * Inicializa el simulador de datos, obtiene el histórico completo e inicia el ciclo de actualizaciones periódicas.
+ */
 async function inicializarSimulador() {
     try {
         console.log("Cargando dataset histórico desde FastAPI...");
@@ -716,11 +742,10 @@ async function inicializarSimulador() {
     }
 }
 
-// ======================================================================
-// 4. MOTOR DE LA SIMULACIÓN TEMPORAL (ITERADOR)
-// ======================================================================
+/**
+ * Procesa un lote individual de datos, actualizando gráficos y marcadores de mapa en el ciclo de simulación.
+ */
 function ejecutarPasoSimulacion() {
-    // 🔥 OPTIMIZACIÓN 5: Eliminar 'return' para que no deje el gráfico en blanco
     if (indiceCronogramaActual >= listaFechasUnicas.length) {
         console.log("Fin de la línea de tiempo alcanzada. Reiniciando simulación...");
         indiceCronogramaActual = 0;
@@ -822,5 +847,4 @@ function ejecutarPasoSimulacion() {
     indiceCronogramaActual++;
 }
 
-// Inicializar el sistema completo
 inicializarSimulador();

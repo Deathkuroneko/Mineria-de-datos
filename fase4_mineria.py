@@ -6,13 +6,13 @@ from sklearn.ensemble import IsolationForest
 import os
 import json
 
-# --- CONFIGURACIÓN DE RUTAS ---
 PARQUET_LIMPIO = "opensky_datos_optimizados.parquet"
 PARQUET_MINERIA = "opensky_resultados_mineria.parquet"
 
 def calcular_k_optimo_muestreado(df, features, sample_per_lote, max_k=8):
     """
-    Calcula K óptimo usando muestreo estratificado por lote.
+    Calcula el valor óptimo de K para el algoritmo K-Means mediante un muestreo estratificado por lote.
+    Retorna el número óptimo de clústeres.
     """
     fechas = df['fecha_captura_sistema'].unique()
     muestras = []
@@ -27,14 +27,12 @@ def calcular_k_optimo_muestreado(df, features, sample_per_lote, max_k=8):
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
     
-    # Calcular wcss y codo (igual que antes)
     wcss = []
     for i in range(1, max_k + 1):
         kmeans = KMeans(n_clusters=i, init='k-means++', random_state=42, n_init=3)
         kmeans.fit(X_scaled)
         wcss.append(kmeans.inertia_)
     
-    # Método de máxima distancia
     x1, y1 = 1, wcss[0]
     x2, y2 = max_k, wcss[-1]
     distancias = []
@@ -52,14 +50,14 @@ def calcular_k_optimo_muestreado(df, features, sample_per_lote, max_k=8):
 
 def ejecutar_modulo_mineria(n_clusters=None):
     """
-    Si n_clusters es None, se calcula automáticamente con el método del codo.
-    Si se especifica, se usa ese valor.
+    Ejecuta el proceso de minería de datos que incluye clustering y detección de anomalías.
+    Si no se provee el número de clústeres, se calcula de forma automática.
+    Retorna un DataFrame con las asignaciones de clústeres y las anomalías detectadas.
     """
     print("=" * 60)
     print("🎬 MÓDULO 4: APLICACIÓN DE TÉCNICAS DE MINERÍA DE DATOS")
     print("=" * 60)
     
-    # 1. CARGA DEL DATASET OPTIMIZADO
     if not os.path.exists(PARQUET_LIMPIO):
         print(f"❌ Error: No se encontró el archivo '{PARQUET_LIMPIO}'. Ejecuta la Fase 3 primero.")
         return
@@ -68,35 +66,29 @@ def ejecutar_modulo_mineria(n_clusters=None):
     df = pd.read_parquet(PARQUET_LIMPIO)
     print(f"📊 Registros listos para minería: {len(df):,}")
 
-    # 2. SELECCIÓN DE CARACTERÍSTICAS
     features_monitoreo = ['baro_altitude', 'velocity_kmh', 'vertical_rate']
     print(f"⚙️ Seleccionando variables cinéticas: {features_monitoreo}")
     X = df[features_monitoreo].copy()
 
-    # 3. ESCALAMIENTO
     print("⚖️ Aplicando Standard Scaler...")
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
-    # 4. DETERMINAR K ÓPTIMO
     if n_clusters is None:
         print("🔍 Calculando K óptimo con el método del codo...")
         n_clusters = calcular_k_optimo_muestreado(df, features_monitoreo, sample_per_lote=2000)
     else:
         print(f"ℹ️ Usando K fijo: {n_clusters} (especificado por el usuario)")
 
-    # 5. CLUSTERING CON K-MEANS
     print(f"🤖 Entrenando modelo K-Means con {n_clusters} clústeres...")
     kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
-    df['cluster_vuelo'] = kmeans.fit_predict(X_scaled)  # Asignación directa
+    df['cluster_vuelo'] = kmeans.fit_predict(X_scaled)
 
-    # Mapeo de centroides
     centroides = scaler.inverse_transform(kmeans.cluster_centers_)
     print("\n📊 Análisis de Centroides Encontrados (Perfiles Promedio):")
     for i, centroide in enumerate(centroides):
         print(f"   🔹 Perfil {i}: Altitud: {centroide[0]:.2f}m | Velocidad: {centroide[1]:.2f} km/h | Tasa Vertical: {centroide[2]:.2f} m/s")
 
-    # 6. DETECCIÓN DE ANOMALÍAS
     print("\n🌲 Entrenando Isolation Forest...")
     iso_forest = IsolationForest(contamination=0.01, random_state=42, n_jobs=-1)
     predicciones_anomalias = iso_forest.fit_predict(X_scaled)
@@ -106,15 +98,13 @@ def ejecutar_modulo_mineria(n_clusters=None):
     num_anomalias = df['es_anomalia'].sum()
     print(f"⚠️ Detección completada: {num_anomalias:,} registros anómalos ({df['es_anomalia'].mean()*100:.2f}%)")
 
-    # 7. GUARDAR RESULTADOS EN PARQUET
     print(f"\n💾 Guardando resultados en: '{PARQUET_MINERIA}'...")
     df.to_parquet(PARQUET_MINERIA, index=False)
 
-    # 8. GUARDAR MÉTRICAS EN JSON
     metricas = {
         "total_registros_procesados": len(df),
         "n_clusters": n_clusters,
-        "k_optimo_calculado": n_clusters,  # Para el frontend
+        "k_optimo_calculado": n_clusters,
         "centroides": [
             {
                 "perfil": i,

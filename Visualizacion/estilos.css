@@ -25,7 +25,7 @@ header {
 header h1 { margin: 0; font-size: 1.8rem; color: var(--accent-blue); }
 header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
 
-/* Grid de Monitoreo Principal */
+/* Configuración de la cuadrícula principal de monitoreo */
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -50,7 +50,7 @@ header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
 }
 
 .mapa-container {
-    grid-column: span 2; /* El mapa ocupa el doble de ancho */
+    grid-column: span 2;
 }
 
 #mapa {
@@ -68,9 +68,6 @@ header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
     margin: 1rem 0;
 }
 
-/* ======================================================================
-   NUEVOS ESTILOS: SECCIÓN DE SUSTENTO TÉCNICO
-   ====================================================================== */
 
 .seccion-titulo {
     margin: 2rem 2rem 1rem 2rem;
@@ -79,7 +76,6 @@ header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
     color: var(--text-color);
 }
 
-/* Grid secundario balanceado para los análisis de clusterización */
 .metodologia-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
@@ -87,7 +83,6 @@ header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
     padding: 0 2rem 2rem 2rem;
 }
 
-/* Comportamiento Flexbox para centrar elementos internos verticales */
 .card-flex {
     display: flex;
     flex-direction: column;
@@ -100,9 +95,8 @@ header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
     height: auto;
 }
 
-/* Caja de protección para el contenedor del Dendrograma */
 .contenedor-imagen {
-    background: rgba(15, 23, 42, 0.4); /* Fondo sutil oscuro */
+    background: rgba(15, 23, 42, 0.4);
     padding: 10px;
     border-radius: 8px;
     border: 1px solid var(--border-color);
@@ -120,13 +114,11 @@ header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
     border-radius: 4px;
 }
 
-/* 1. El mapa debe ocupar todo el ancho, pero dentro de un grid de 1 columna */
 .mapa-container {
-    grid-column: 1 / -1; /* Ocupa todas las columnas */
-    margin: 0 2rem 1.5rem 2rem; /* Ajusta márgenes para que no quede pegado al borde */
+    grid-column: 1 / -1;
+    margin: 0 2rem 1.5rem 2rem;
 }
 
-/* 2. Asegurar que el contenedor del mapa tenga altura suficiente */
 #mapa {
     height: 600px;
     width: 100%;
@@ -134,7 +126,6 @@ header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
     background: #111;
 }
 
-/* 3. Los contenedores de imágenes deben tener altura fija para evitar superposición */
 .contenedor-imagen {
     background: rgba(15, 23, 42, 0.4);
     padding: 10px;
@@ -143,37 +134,32 @@ header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 250px; /* ← ALTURA MÍNIMA FIJA */
-    max-height: 350px; /* ← ALTURA MÁXIMA PARA NO DESBORDAR */
-    overflow: hidden;  /* ← RECORTA EL EXCESO SI LO HAY */
+    min-height: 250px;
+    max-height: 350px;
+    overflow: hidden;
 }
 
 .contenedor-imagen img {
     max-width: 100%;
-    max-height: 100%; /* ← LA IMAGEN NO SUPERA EL CONTENEDOR */
+    max-height: 100%;
     height: auto;
     object-fit: contain;
     border-radius: 4px;
 }
 
-/* 4. Ajustar el grid de sustento técnico para que sea realmente de 2 columnas fijas */
 .metodologia-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* ← COLUMNAS FIJAS, NO AUTO-FIT */
+    grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
     padding: 0 2rem 2rem 2rem;
 }
 
-/* 5. En pantallas pequeñas (menos de 900px), apilar a 1 columna */
 @media (max-width: 900px) {
     .metodologia-grid {
         grid-template-columns: 1fr;
     }
 }
 
-/* ======================================================================
-   NUEVOS ESTILOS: SECCIÓN DE SUSTENTO TÉCNICO COMPLETA
-   ====================================================================== */
 
 .seccion-titulo {
     margin: 2rem 2rem 1rem 2rem;
@@ -182,7 +168,6 @@ header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
     color: var(--text-color);
 }
 
-/* Grid de soporte metodológico con dos columnas por defecto */
 .metodologia-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -190,34 +175,29 @@ header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
     padding: 0 2rem 1.5rem 2rem;
 }
 
-/* Modificador para que la sección del codo ocupe todo el ancho real */
 .grid-codo-full {
     display: flex;
     align-items: center;
 }
 
-/* Comportamiento Flexbox para estirar y nivelar las tarjetas del bloque */
 .card-flex {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 }
 
-/* REGLA CRÍTICA: Contenedor con altura fija explícita para el Canvas */
 .contenedor-grafico {
     position: relative;
     width: 100%;
     height: 280px; 
-    margin: 0 auto; /* Centra el contenido internamente */
+    margin: 0 auto;
 }
 
-/* Modificador de altura extra exclusivo para el gráfico del codo */
 .contenedor-grafico.codo-altura {
     height: 320px;
-    max-width: 700px; /* ← EVITA EL ESTIRAMIENTO (Proporción perfecta de 8:4 o similar) */
+    max-width: 700px;
 }
 
-/* Componentes de Diseño Interno para la tarjeta de Validación de Silueta */
 .silueta-header {
     display: flex;
     align-items: center;
@@ -283,7 +263,6 @@ header p { margin: 0.5rem 0 0 0; color: #94a3b8; }
     text-align: center;
 }
 
-/* Diseños adaptativos (Media Queries) */
 @media (max-width: 950px) {
     .metodologia-grid {
         grid-template-columns: 1fr;

@@ -23,9 +23,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Rutas relativas: los Parquets están en el directorio padre de Visualizacion/
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # directorio donde está app_api.py
-PARENT_DIR = os.path.dirname(BASE_DIR)                 # subimos un nivel
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(BASE_DIR)
 
 RUTA_OPTIMIZADO = os.path.join(PARENT_DIR, "opensky_datos_optimizados.parquet")
 RUTA_RESULTADOS = os.path.join(PARENT_DIR, "opensky_resultados_mineria.parquet")
@@ -34,27 +33,25 @@ RUTA_GLOBAL_STATS = os.path.join(PARENT_DIR, "opensky_estadisticas_globales.parq
 RUTA_MINERIA_JSON = os.path.join(PARENT_DIR, "mineria_resultados.json")  
 RUTA_METRICS_JSON = os.path.join(PARENT_DIR, "pipeline_metrics.json")
 
-# Al inicio del archivo, define cuántos lotes quieres enviar
-NUM_LOTES_A_DEVOLVER = 5  # Cambia este valor según necesites
+NUM_LOTES_A_DEVOLVER = 5
 
 @app.get("/api/vuelos")
 def obtener_vuelos_minados():
+    """
+    Retorna los datos de los vuelos procesados, limitados a un número de lotes determinado.
+    """
     try:
         df = pd.read_parquet(RUTA_RESULTADOS)
         df = df.replace([np.inf, -np.inf], np.nan)
         
-        # Obtener las fechas únicas ordenadas
         fechas = df['fecha_captura_sistema'].unique()
-        fechas = np.sort(fechas)  # orden ascendente (la más antigua primero)
+        fechas = np.sort(fechas)
         
-        # Tomar solo los primeros NUM_LOTES_A_DEVOLVER
         if len(fechas) > NUM_LOTES_A_DEVOLVER:
             fechas = fechas[:NUM_LOTES_A_DEVOLVER]
         
-        # Filtrar el DataFrame para que solo incluya esos lotes
         df_filtrado = df[df['fecha_captura_sistema'].isin(fechas)]
         
-        # Serializar a JSON
         json_limpio = df_filtrado.to_json(orient="records", default_handler=str)
         return Response(content=json_limpio, media_type="application/json")
         
@@ -63,6 +60,9 @@ def obtener_vuelos_minados():
     
 @app.get("/api/metodo-codo")
 def obtener_metodo_codo():
+    """
+    Calcula el valor de la inercia (WCSS) para distintos números de clústeres a partir del último lote procesado.
+    """
     try:
         from sklearn.cluster import KMeans
         from sklearn.preprocessing import StandardScaler
@@ -97,36 +97,30 @@ def obtener_dendrograma_por_lote(
 ):
     """
     Genera un dendrograma jerárquico a partir de una muestra del lote especificado.
-    Devuelve la imagen en base64 para incrustar en el frontend.
+    Retorna la imagen codificada en base64 junto con metadatos del lote.
     """
     try:
         df = pd.read_parquet(RUTA_OPTIMIZADO)
         
         if fecha_lote is None:
-            # Si no se especifica, usamos el último lote
             ultima_fecha = df['fecha_captura_sistema'].max()
         else:
             ultima_fecha = fecha_lote
         
-        # Filtrar por la fecha indicada
         df_lote = df[df['fecha_captura_sistema'] == ultima_fecha]
         if df_lote.empty:
             return {"error": f"No hay datos para el lote {ultima_fecha}"}
         
-        # Seleccionar características para el clustering
         X = df_lote[['latitude', 'longitude', 'velocity_kmh', 'vertical_rate']].dropna()
         if len(X) == 0:
             return {"error": "No hay datos válidos en este lote"}
         
-        # Muestreo aleatorio (para no sobrecargar la visualización)
         sample_size = min(sample_size, len(X))
         X_sample = X.sample(n=sample_size, random_state=42)
         
-        # Escalar datos
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X_sample)
         
-        # Generar dendrograma
         plt.figure(figsize=(10, 5))
         linkage = sch.linkage(X_scaled, method='ward')
         sch.dendrogram(linkage, no_labels=True, color_threshold=None)
@@ -135,7 +129,6 @@ def obtener_dendrograma_por_lote(
         plt.ylabel('Distancia de fusión')
         plt.tight_layout()
         
-        # Guardar en buffer y codificar en base64
         buf = io.BytesIO()
         plt.savefig(buf, format='png', dpi=100)
         buf.seek(0)
@@ -154,22 +147,23 @@ def obtener_dendrograma_por_lote(
 def obtener_silhouette_precalc(
     fecha_lote: str = Query(None, description="Fecha del lote. Si no se envía, usa el último.")
 ):
+    """
+    Retorna los coeficientes de silueta calculados para evaluar el agrupamiento de los datos del lote.
+    """
     try:
-        # Verificar si existe el archivo
         if not os.path.exists(RUTA_SILUETA):
             return {"error": "Archivo de siluetas no encontrado. Ejecuta 'fase5_precalculo_silueta.py' primero."}
         
         df_sil = pd.read_parquet(RUTA_SILUETA)
         
         if fecha_lote is None:
-            fila = df_sil.iloc[-1]  # último lote
+            fila = df_sil.iloc[-1]
         else:
             fila = df_sil[df_sil['fecha_lote'] == fecha_lote]
             if fila.empty:
                 return {"error": f"No hay silueta para el lote {fecha_lote}"}
             fila = fila.iloc[0]
         
-        # Convertir el string de sil_per_cluster a dict
         import ast
         sil_per_cluster = ast.literal_eval(fila['silhouette_per_cluster'])
         
@@ -187,10 +181,10 @@ def obtener_scatter_por_lote(
     fecha_lote: str = Query(None, description="Fecha del lote. Si no se envía, usa el último lote.")
 ):
     """
-    Devuelve los datos para el scatter plot: velocity_kmh vs baro_altitude, con cluster y anomalía.
+    Retorna un subconjunto de variables con asignación de clústeres y detección de anomalías para generar gráficos de dispersión.
     """
     try:
-        df = pd.read_parquet(RUTA_RESULTADOS)  # Usamos el dataset con etiquetas
+        df = pd.read_parquet(RUTA_RESULTADOS)
         
         if fecha_lote is None:
             ultima_fecha = df['fecha_captura_sistema'].max()
@@ -201,12 +195,10 @@ def obtener_scatter_por_lote(
         if df_lote.empty:
             return {"error": f"No hay datos para el lote {ultima_fecha}"}
         
-        # Seleccionar columnas necesarias
         scatter_data = df_lote[['velocity_kmh', 'baro_altitude', 'cluster_vuelo', 'es_anomalia']].dropna()
         if len(scatter_data) == 0:
             return {"error": "No hay datos válidos en este lote"}
         
-        # Convertir a lista de diccionarios para JSON
         registros = scatter_data.to_dict(orient='records')
         
         return {
@@ -222,11 +214,9 @@ def obtener_estadisticas_lote(
     fecha_lote: str = Query(None, description="Fecha del lote. Si no se envía, usa el último lote.")
 ):
     """
-    Devuelve estadísticas resumidas del lote especificado.
-    Lee directamente del Parquet pre-calculado (Fase 5).
+    Retorna las estadísticas descriptivas para el lote especificado basadas en los cálculos previos.
     """
     try:
-        # Ruta al Parquet de estadísticas por lote
         RUTA_ESTADISTICAS = os.path.join(PARENT_DIR, "opensky_estadisticas_lotes.parquet")
         
         if not os.path.exists(RUTA_ESTADISTICAS):
@@ -234,9 +224,7 @@ def obtener_estadisticas_lote(
         
         df_stats = pd.read_parquet(RUTA_ESTADISTICAS)
         
-        # Si no se especifica fecha, usar el último lote
         if fecha_lote is None:
-            # Tomar la fecha más reciente (ordenada)
             df_stats = df_stats.sort_values('fecha_lote')
             fila = df_stats.iloc[-1]
         else:
@@ -245,7 +233,6 @@ def obtener_estadisticas_lote(
                 return {"error": f"No hay estadísticas para el lote {fecha_lote}"}
             fila = fila.iloc[0]
         
-        # Deserializar JSONs
         cluster_dist = json.loads(fila['cluster_distribucion'])
         top_paises = json.loads(fila['top_paises'])
         
@@ -280,12 +267,10 @@ def obtener_estadisticas_lote(
 @app.get("/api/evolucion-temporal")
 def obtener_evolucion_temporal():
     """
-    Devuelve los datos agregados por lote (fecha, total_aviones, anomalias, velocidad_media)
-    para todos los lotes disponibles.
+    Retorna la evolución temporal agregada (totales, anomalías, promedios) de los lotes procesados.
     """
     try:
         df = pd.read_parquet(RUTA_RESULTADOS)
-        # Agrupar por fecha_captura_sistema
         grouped = df.groupby('fecha_captura_sistema').agg(
             total_aviones=('icao24', 'count'),
             anomalias=('es_anomalia', lambda x: x.sum() if 'es_anomalia' in x else 0),
@@ -293,10 +278,8 @@ def obtener_evolucion_temporal():
             altitud_media=('baro_altitude', 'mean')
         ).reset_index()
         
-        # Ordenar por fecha
         grouped = grouped.sort_values('fecha_captura_sistema')
         
-        # Convertir a listas para JSON
         fechas = grouped['fecha_captura_sistema'].astype(str).tolist()
         totales = grouped['total_aviones'].tolist()
         anomalias = grouped['anomalias'].fillna(0).astype(int).tolist()
@@ -315,6 +298,9 @@ def obtener_evolucion_temporal():
 
 @app.get("/api/mapa-calor")
 def obtener_mapa_calor():
+    """
+    Retorna los datos y la imagen precalculada del mapa de calor de correlación.
+    """
     try:
         with open("mapa_calor_estatico.json", "r") as f:
             data = json.load(f)
@@ -326,12 +312,13 @@ def obtener_mapa_calor():
     
 @app.get("/api/estadisticas-globales")
 def obtener_estadisticas_globales():
+    """
+    Retorna las estadísticas descriptivas calculadas a nivel global sobre todos los datos procesados.
+    """
     try:
-        # Intentar leer el Parquet precalculado
         if os.path.exists(RUTA_GLOBAL_STATS):
             df_global = pd.read_parquet(RUTA_GLOBAL_STATS)
             stats = df_global.iloc[0].to_dict()
-            # Convertir tipos
             for key, value in stats.items():
                 if isinstance(value, (np.int64, np.int32)):
                     stats[key] = int(value)
@@ -339,14 +326,15 @@ def obtener_estadisticas_globales():
                     stats[key] = float(value)
             return stats
         else:
-            # Fallback: calcular sobre la marcha
             df = pd.read_parquet(RUTA_RESULTADOS)
-            # ... (código existente)
     except Exception as e:
         return {"error": str(e)}
 
 @app.get("/api/mineria-resultados")
 def obtener_mineria_resultados():
+    """
+    Retorna los resultados y métricas del proceso de minería de datos.
+    """
     try:
         with open(RUTA_MINERIA_JSON, "r") as f:
             data = json.load(f)
@@ -358,6 +346,9 @@ def obtener_mineria_resultados():
     
 @app.get("/api/pipeline-metrics")
 def obtener_metricas_pipeline():
+    """
+    Retorna las métricas de rendimiento generadas por la ejecución del pipeline de datos.
+    """
     try:
         with open(RUTA_METRICS_JSON, "r") as f:
             data = json.load(f)

@@ -1,110 +1,118 @@
-## INSTALACION DE ENTORNO (POWERSHELL)
-**Crear entorno**
-python -m venv .venv
-**Para ejecutar Script**
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-**Activar entorno**
-.venv\Scripts\Activate.ps1
-**Instalar Requerimientos**
-python.exe -m pip install --upgrade pip
-pip install -r requirements.txt
-**Ejecutar el Script desde Visualizacion**
-python test.py
-**Abrir el index en un navegador**
-index.html
-
-**Borrar entorno**
-Remove-Item -Recurse -Force .venv, __pycache__
-----
-Datos del mapa de calor
-
-python .\fase7_precalculo_mapa_calor.py
-📊 Generando mapa de calor estático con muestreo estratificado...
-   Registros totales: 5,628,989
-   Muestra total: 1,252,000 registros (626 lotes)
-✅ Mapa de calor guardado en 'Visualizacion\mapa_calor_estatico.json'
-
-----
-
-
-# PROPUESTA DE PROYECTO DE INVESTIGACIÓN Y MINERÍA DE DATOS
-
-## 1. TÍTULO DEL PROYECTO
+# ✈️ Proyecto: OpenSky Data Pipeline & Dashboard Analítico
 
 **Diseño e Implementación de un Pipeline de Datos Escalable para la Clasificación Dinámica de Fases de Vuelo y Detección de Anomalías en el Espacio Aéreo Internacional Utilizando la API Abierta de OpenSky Network.**
 
 ---
 
-## 2. ANTECEDENTES Y JUSTIFICACIÓN DEL DATASET
+## 1. Descripción General del Proyecto
 
-El monitoreo del tránsito aéreo global genera flujos masivos de datos geoespaciales y físicos por segundo. Tradicionalmente, la auditoría de estos datos dependía de umbrales rígidos o de la revisión manual de analistas de control de tráfico.
+Este proyecto consiste en un sistema integral de ingeniería de datos y *Machine Learning* no supervisado que captura, procesa, modela y visualiza en tiempo real el tráfico aéreo global. 
+A través de un pipeline automatizado, el sistema clasifica las fases aerodinámicas de cada vuelo y aísla comportamientos anómalos o de riesgo sin necesidad de reglas manuales, presentando todos los hallazgos en un **Dashboard Interactivo** vía web.
 
-La elección de la API de **OpenSky Network** se justifica bajo tres pilares de la Ingeniería de Sistemas:
+## 2. Arquitectura y Fases del Pipeline
 
-1. **Volumen y Escala Real:** Permite la recolección de millones de registros capturados por receptores ADS-B distribuidos por todo el planeta, ofreciendo un escenario real de *Big Data* idóneo para el entorno de desarrollo.
-2. **Naturaleza Multidimensional:** Combina variables categóricas, espaciales y físicas que interactúan entre sí de forma compleja, lo que impide el análisis mediante software estadístico convencional y exige el uso de algoritmos avanzados de Machine Learning.
-3. **Dinámica de Tiempo Real:** El dataset documenta la física del vuelo en intervalos continuos, permitiendo evaluar la resiliencia y escalabilidad de la arquitectura de software implementada (Pipeline e ingesta en *streaming* a disco).
+El sistema está diseñado de manera modular en 7 fases orquestadas por un script principal:
 
----
-
-## 3. DESCRIPCIÓN ANATÓMICA DEL DATASET (¿De qué va la información extraída?)
-
-Cada registro capturado en el archivo CSV consolidado representa el "vector de estado" de una aeronave en un instante de tiempo específico. Los datos se agrupan en tres categorías analíticas esenciales:
-
-* **Identificadores Únicos y Origen:** `icao24` (ID único de la aeronave en hexadecimal), `callsign` (código de llamada del vuelo, ej. AVA012), y `origin_country` (país de registro de la aeronave o de la estación base).
-* **Variables Geoespaciales:** `longitude` (longitud), `latitude` (latitud), `baro_altitude` (altitud barométrica en metros) y `geo_altitude` (altitud geométrica dada por GPS).
-* **Variables Dinámicas/Físicas:** `velocity` (velocidad horizontal en m/s), `true_track` (rumbo o dirección en grados angulares con respecto al norte), `vertical_rate` (velocidad de ascenso o descenso en m/s), y `on_ground` (bandera booleana que indica si el avión se encuentra en pista).
-* **Variable de Control Temporal:** `fecha_captura_sistema` (métrica inyectada por nuestro pipeline para auditoría cronológica).
+* **Orquestador Principal (`pipeline_principal.py`):** Ejecuta de forma secuencial todo el ciclo de vida del dato.
+* **Fase 1 (Ingesta):** Conexión a la API de OpenSky y recolección masiva de telemetría en streaming a formato CSV.
+* **Fase 2 (ETL):** Limpieza, depuración y conversión de los datos crudos a formato optimizado `.parquet`.
+* **Fases 3 y 4 (Minería de Datos):** Entrenamiento e inferencia de algoritmos de Machine Learning (K-Means y Isolation Forest).
+* **Fase 5 (Estadísticas por Lotes):** Agrupación y cálculo de indicadores métricos globales y por intervalos de captura.
+* **Fase 6 (Pre-cálculo de Silueta):** Evaluación matemática (Silhouette Score) de la calidad de los clústeres generados.
+* **Fase 7 (Pre-cálculo de Mapa de Calor):** Generación de matrices de correlación estáticas (Pearson) entre variables físicas.
+* **Capa de Visualización (`Visualizacion/`):** Una API construida en **FastAPI** (`app_api.py`) expone los resultados precalculados hacia un front-end en **HTML/JS/CSS** potenciado con Leaflet y Chart.js.
 
 ---
 
-## 4. ALGORITMOS DE MINERÍA DE DATOS A APLICAR (ETAPA 4)
+## 3. Guía de Instalación y Ejecución (Windows PowerShell)
 
-Para extraer el conocimiento oculto en los millones de filas, se seleccionaron dos técnicas de aprendizaje no supervisado debido a que los datos no vienen etiquetados de origen:
+Sigue estos pasos para desplegar el proyecto localmente en un entorno Windows utilizando PowerShell.
 
-### A. Segmentación de Patrones Cinéticos (Clustering con K-Means)
+### A. Preparación del Entorno
+```powershell
+# 1. Crear el entorno virtual
+python -m venv .venv
 
-El algoritmo agrupará de manera matemática las filas del dataset en cúmulos (*clusters*) basados puramente en la correlación entre `velocity`, `baro_altitude`, `vertical_rate` y `on_ground`.
+# 2. Habilitar ejecución de scripts (si es necesario)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
-* **Justificación:** Permitirá descubrir las firmas físicas abstractas de un vuelo sin mapear reglas manuales, separando dinámicamente las fases de crucero, aproximación, maniobra de despegue y rodaje en pista.
+# 3. Activar el entorno virtual
+.venv\Scripts\Activate.ps1
 
-### B. Aislamiento de Comportamientos Atípicos (Detección de Anomalías con Isolation Forest)
+# 4. Actualizar pip e instalar los requerimientos
+python.exe -m pip install --upgrade pip
+pip install -r requirements.txt
+```
 
-Este algoritmo aísla observaciones basándose en qué tan rápido se separan del comportamiento de la masa de datos.
+### B. Ejecución del Sistema
+```powershell
+# 1. Ejecutar el Pipeline Completo (Recolección y Procesamiento)
+python pipeline_principal.py
 
-* **Justificación:** Evaluará de forma simultánea si un vector de vuelo presenta inconsistencias físicas graves (como variaciones extremas de la tasa vertical a baja altura o rumbos erráticos).
+# Nota: Opcionalmente puedes ejecutar fases individuales, por ejemplo el mapa de calor:
+# python fase7_precalculo_mapa_calor.py
+
+# 2. Iniciar el Servidor Backend (FastAPI)
+cd Visualizacion
+uvicorn app_api:app --reload
+
+# 3. Visualizar el Dashboard
+# Abre el archivo Visualizacion/index.html en tu navegador web de preferencia.
+```
+
+### C. Limpieza del Entorno (Opcional)
+```powershell
+# Para eliminar el entorno y cachés:
+Remove-Item -Recurse -Force .venv, __pycache__
+```
 
 ---
 
-## 5. JUSTIFICACIÓN OPERATIVA Y CONCLUSIONES RELEVANTES A OBTENER (¿Qué se va a conseguir al finalizar?)
+## 4. Algoritmos de Minería de Datos
 
-La implementación de los algoritmos de minería de datos permitirá extraer conclusiones de alto valor estratégico y operativo que justifican plenamente el proyecto:
+Dado que los datos de vuelo en vivo no cuentan con etiquetas de la fase operativa (despegue, crucero, etc.), se implementaron técnicas avanzadas de **Aprendizaje No Supervisado**:
 
-### 1. Auditoría Automatizada de Seguridad Aérea (Detección de Anomalías)
+### A. Segmentación de Patrones Cinéticos (K-Means)
+El algoritmo agrupa matemáticamente cada registro en *clusters* basados en la interacción de la velocidad horizontal (`velocity`), la altitud (`baro_altitude`) y la tasa vertical (`vertical_rate`). 
+* **Objetivo:** Descubrir automáticamente las firmas físicas de un vuelo (Tierra/Rodaje, Crucero, Ascenso/Aproximación) mediante el cálculo del **K-Óptimo** (Método del Codo).
 
-* **Resultado Extraído:** El algoritmo identificará aeronaves con comportamientos cinéticos peligrosos o atípicos (por ejemplo, descensos extremadamente pronunciados `vertical_rate < -15 m/s` en zonas de baja altitud).
-* **Conclusión/Impacto:** Se demuestra la viabilidad de construir sistemas de alerta temprana autónomos capaces de notificar incidentes o maniobras de emergencia en el espacio aéreo sin intervención humana directa.
-
-### 2. Caracterización Automática del Comportamiento Aerodinámico (Clustering)
-
-* **Resultado Extraído:** Al concluir el particionamiento de K-Means, el sistema perfilará los límites numéricos exactos que definen el comportamiento de una aeronave comercial promedio.
-* **Conclusión/Impacto:** Permite establecer "huellas operativas estándar" por aerolínea o país. Si un cluster mezcla aviones comerciales con aviación ligera de manera errónea, el modelo revelará ineficiencias en la asignación de corredores aéreos.
-
-### 3. Descubrimiento de Inconsistencias de Instrumentación (ETL Crosstabs)
-
-* **Resultado Extraído:** El análisis comparativo de la brecha entre `baro_altitude` (presión de aire) y `geo_altitude` (sensores satelitales) en millones de datos.
-* **Conclusión/Impacto:** Permite identificar zonas geográficas específicas del planeta donde los radares terrestres sufren distorsiones climáticas u obsolescencia tecnológica, sirviendo como insumo para auditorías de infraestructura de telecomunicaciones aéreas.
-
-### 4. Mapeo de Densidad de Tráfico e Identificación de Saturation Points
-
-* **Resultado Extraído:** Al agrupar las coordenadas espaciales (`latitude`, `longitude`) cruzadas con el tiempo de captura.
-* **Conclusión/Impacto:** Se logrará concluir de manera cuantitativa cuáles son las horas pico reales del tráfico transcontinental y qué países actúan como los mayores cuellos de botella del tránsito global, optimizando la planificación de rutas para reducir el consumo de combustible a nivel macro.
+### B. Aislamiento de Comportamientos Atípicos (Isolation Forest)
+Aísla las observaciones analizando qué tan anómalo o divergente es el comportamiento de una aeronave respecto al tráfico global.
+* **Objetivo:** Detectar inconsistencias cinéticas graves o maniobras evasivas/erráticas de forma autónoma.
 
 ---
 
-## 6. CRONOGRAMA TÉCNICO DE IMPLEMENTACIÓN (Flujo en Google Colab / VS Code)
+## 5. Descripción Anatómica del Dataset
 
-1. **Fase 1: Ingesta** -> Ejecución del script OAuth2 en streaming masivo anexando lotes al disco duro (CSV).
-2. **Fase 2: ETL** -> Carga del archivo CSV gigante a un DataFrame, eliminación de ruido (duplicados de transpondedor, nulos espaciales) e ingeniería de características (conversión de m/s a nudos/kmh).
-3. **Fase 3: Modelamiento** -> Entrenamiento de los algoritmos de Scikit-Learn sobre la infraestructura local o escalada a Colab utilizando GPUs/TPUs si el dataset supera los millones de filas.
-4. **Fase 4: Visualización** -> Renderizado de mapas de dispersión geográfica e histogramas de clusters para la sustentación final ante el tribunal docente.
+Cada registro capturado de la red ADS-B representa el "vector de estado" de una aeronave en un momento exacto, agrupando variables en:
+
+* **Identificadores Únicos y Origen:** `icao24` (ID hexadecimal único), `callsign` (código de llamada de la aerolínea) y `origin_country` (país de registro).
+* **Variables Geoespaciales:** `longitude` y `latitude` (coordenadas GPS), `baro_altitude` (altitud barométrica).
+* **Variables Dinámicas/Físicas:** `velocity` (velocidad horizontal en m/s), `true_track` (rumbo o dirección en grados angulares) y `vertical_rate` (tasa de ascenso/descenso en m/s).
+* **Variable de Control Temporal:** `fecha_captura_sistema` (inyectada por el pipeline para gestionar la línea de tiempo por lotes).
+
+---
+
+## 6. Conclusiones y Valor Operativo
+
+* **Auditoría Automatizada de Seguridad Aérea:** El pipeline demuestra ser capaz de detectar anomalías y emitir alertas tempranas de vuelos con parámetros fuera del marco operativo estándar sin intervención humana.
+* **Caracterización Aerodinámica Dinámica:** La clusterización establece firmas numéricas precisas que definen el comportamiento de una aeronave de acuerdo a las fases lógicas del vuelo.
+* **Análisis de Congestión Espacial:** Las herramientas de visualización permiten mapear las densidades geográficas del tráfico aéreo y detectar cuellos de botella del tránsito transcontinental, aportando un insumo de valor para la optimización de rutas globales.
+
+---
+
+## 7. Valor Estratégico y Aplicaciones Prácticas de los Datos
+
+La información extraída, procesada y mostrada en este Dashboard representa un alto valor para múltiples sectores de la industria aeronáutica y logística. El acceso a estos *insights* analíticos permite:
+
+### A. Para Autoridades de Control de Tráfico Aéreo (ATC)
+* **Gestión de Crisis y Alertas Tempranas:** La identificación inmediata de anomalías cinéticas (vuelos con caídas de altitud abruptas o pérdidas de velocidad críticas) permite a los controladores priorizar aeronaves en riesgo proactivamente.
+* **Optimización del Espacio Aéreo:** Entender las áreas de congestión (vistas en el mapa) y la distribución global de altitudes ayuda a la reasignación dinámica de corredores aéreos, evitando patrones de espera prolongados.
+
+### B. Para Aerolíneas y Operadores Logísticos
+* **Eficiencia de Combustible (Green Aviation):** Al analizar los perfiles de ascenso y descenso (descubiertos por K-Means), las aerolíneas pueden comparar la ejecución real de sus vuelos contra modelos teóricos para auditar si se están realizando aproximaciones eficientes (Continuous Descent Operations).
+* **Inteligencia Operativa:** Conocer la cantidad exacta de aviones activos, países de origen y sus fases de vuelo permite a las empresas evaluar la saturación de rutas específicas en tiempo real.
+
+### C. Para Aseguradoras, Gobiernos y Entidades de Investigación
+* **Auditoría de Cumplimiento Ambiental y de Ruido:** Las firmas físicas generadas pueden ser utilizadas por autoridades locales para verificar que las aeronaves cumplan con normativas de altitud mínima sobre zonas urbanas pobladas.
+* **Reconstrucción y Análisis Forense de Incidentes:** El almacenamiento persistente (vía `.parquet`) de la telemetría histórica detallada sirve como una "caja negra virtual" de respaldo para investigaciones sobre desviaciones de ruta o incidentes, cruzando la información con la matriz de correlaciones y el historial de anomalías.

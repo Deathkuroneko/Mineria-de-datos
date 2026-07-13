@@ -1,4 +1,3 @@
-# fase5_precalculo_silueta.py
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
@@ -10,8 +9,11 @@ import json
 PARQUET_OPTIMIZADO = "opensky_datos_optimizados.parquet"
 PARQUET_SILUETA = "opensky_siluetas_por_lote.parquet"
 
-# Leer K óptimo del JSON de minería
 def get_k_optimo():
+    """
+    Recupera el número óptimo de clústeres calculado previamente.
+    Retorna el número de clústeres como entero.
+    """
     try:
         with open("mineria_resultados.json", "r") as f:
             data = json.load(f)
@@ -22,6 +24,10 @@ def get_k_optimo():
 K_CLUSTERS = get_k_optimo()
 
 def precalcular_siluetas(k=K_CLUSTERS):
+    """
+    Calcula el coeficiente de silueta para evaluar la calidad del clustering en cada lote de datos.
+    Guarda los resultados en un archivo Parquet.
+    """
     print("📊 Precalculando coeficiente de silueta por lote...")
     df = pd.read_parquet(PARQUET_OPTIMIZADO)
     fechas = df['fecha_captura_sistema'].unique()
@@ -34,7 +40,6 @@ def precalcular_siluetas(k=K_CLUSTERS):
             continue
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
-        # Clustering jerárquico
         Z = linkage(X_scaled, method='ward')
         clusters = fcluster(Z, t=k, criterion='maxclust')
         if len(set(clusters)) < 2:
@@ -49,7 +54,7 @@ def precalcular_siluetas(k=K_CLUSTERS):
             'fecha_lote': fecha,
             'k': k,
             'silhouette_mean': sil_score,
-            'silhouette_per_cluster': str(sil_per_cluster)  # guardamos como string para Parquet
+            'silhouette_per_cluster': str(sil_per_cluster)
         })
     df_sil = pd.DataFrame(resultados)
     df_sil.to_parquet(PARQUET_SILUETA, index=False)
