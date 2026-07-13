@@ -35,7 +35,7 @@ const ctxKMeans = document.getElementById('chartKmeans').getContext('2d');
 const graficoKMeans = new Chart(ctxKMeans, {
     type: 'bar',
     data: {
-        labels: ['Perfil 0 (Tierra / Rodaje)', 'Perfil 1 (Crucero)', 'Perfil 2 (Ascenso / Aproximación)'],
+        labels: ['Perfil 0 (Ascenso / Aproximación)', 'Perfil 1 (Tierra / Rodaje)', 'Perfil 2 (Crucero)'],
         datasets: [{
             label: 'Cantidad de Aeronaves Activas',
             data: [0, 0, 0],
@@ -115,19 +115,19 @@ const graficoScatter = new Chart(ctxScatter, {
     data: {
         datasets: [
             {
-                label: 'Clúster 0 (Tierra/Rodaje)',
+                label: 'Clúster 0 (Ascenso/Descenso)',
                 data: [],
                 backgroundColor: '#38bdf8',
                 pointRadius: 3,
             },
             {
-                label: 'Clúster 1 (Crucero)',
+                label: 'Clúster 1 (Tierra/Rodaje)',
                 data: [],
                 backgroundColor: '#a855f7',
                 pointRadius: 3,
             },
             {
-                label: 'Clúster 2 (Ascenso/Descenso)',
+                label: 'Clúster 2 (Crucero)',
                 data: [],
                 backgroundColor: '#eab308',
                 pointRadius: 3,
@@ -358,9 +358,9 @@ async function cargarResultadosMineria() {
 
         // Nombres descriptivos para los primeros 3 clústeres (si existen)
         const nombresPerfiles = {
-            0: '🌍 Tierra / Rodaje',
-            1: '✈️ Crucero',
-            2: '⬆️ Ascenso / Aproximación',
+            0: '⬆️ Ascenso / Aproximación',
+            1: '🌍 Tierra / Rodaje',
+            2: '✈️ Crucero',
             3: '🔄 Maniobra / Espera',      // si aparece un cuarto perfil
             4: '📦 Carga / Militar',         // si aparece un quinto
         };
@@ -494,11 +494,11 @@ async function cargarSilhouette(fechaLote, k = 3) {
         // Actualizar valores por clúster (badges)
         const silPerClusterElement = document.getElementById('silhouette-per-cluster');
         if (silPerClusterElement) {
-            const clusterColors = ['#38bdf8', '#a855f7', '#eab308']; // azul, morado, amarillo
+            const clusterColors = ['#38bdf8', '#38bdf8', '#eab308']; // azul, morado, amarillo
             let html = '';
             const entries = Object.entries(data.silhouette_per_cluster);
             for (const [cluster, value] of entries) {
-                const color = clusterColors[parseInt(cluster)] || '#94a3b8';
+                const color = clusterColors[parseInt(cluster)] || '#a855f7';
                 html += `
                     <span style="display: inline-block; background: rgba(51, 65, 85, 0.5); border-left: 4px solid ${color}; padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.9rem; color: #e2e8f0;">
                         Clúster ${cluster}: <strong style="color: ${color};">${parseFloat(value).toFixed(3)}</strong>
