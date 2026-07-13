@@ -63,7 +63,7 @@ uvicorn app_api:app --reload
 ### C. Limpieza del Entorno (Opcional)
 ```powershell
 # Para eliminar el entorno y cachés:
-Remove-Item -Recurse -Force .venv, __pycache__
+Remove-Item -Recurse -Force .venv
 ```
 
 ---
